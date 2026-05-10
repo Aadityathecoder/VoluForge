@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { AlertCircle, ArrowRight, ClipboardList, ShieldCheck, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const nextRaw = searchParams.get('next')
   const next = nextRaw && nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/dashboard'
@@ -35,8 +34,7 @@ export function LoginForm() {
         setError(signError.message)
         return
       }
-      router.push(next)
-      router.refresh()
+      window.location.assign(next)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -54,8 +52,7 @@ export function LoginForm() {
         setError('Unable to enter guest mode right now.')
         return
       }
-      router.push(next)
-      router.refresh()
+      window.location.assign(next)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {

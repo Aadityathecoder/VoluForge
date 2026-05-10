@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { AlertCircle, ArrowRight, CheckCircle2, FileBarChart, ShieldCheck, Users } from 'lucide-react'
 import type { UserRole } from '@/types/database'
 
@@ -30,7 +29,6 @@ const roleOptions: { value: UserRole; label: string; description: string }[] = [
 ]
 
 export default function SignUpPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -82,8 +80,7 @@ export default function SignUpPage() {
         return
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      window.location.assign('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
