@@ -177,6 +177,13 @@ html[data-theme='dark'] {
     box-shadow: var(--vf-shadow);
   }
 
+  .camera-shell {
+    background:
+      radial-gradient(circle at top, rgba(14, 165, 233, 0.18), transparent 40%),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(14, 165, 233, 0.08));
+    border: 1px solid var(--vf-border);
+  }
+
   .auth-shell {
     @apply relative overflow-hidden rounded-[2rem] backdrop-blur-2xl;
     background: var(--vf-surface);

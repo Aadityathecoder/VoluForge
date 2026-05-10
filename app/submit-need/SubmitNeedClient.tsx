@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, Camera, CheckCircle2, LoaderCircle, ScanSearch, XCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Visibility } from '@/types/database'
 
@@ -21,6 +21,9 @@ const CATEGORIES = [
 
 export function SubmitNeedClient({ defaultContactName }: { defaultContactName: string }) {
   const router = useRouter()
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const [organizationName, setOrganizationName] = useState('')
   const [contactName, setContactName] = useState(defaultContactName)
   const [contactEmail, setContactEmail] = useState('')
@@ -38,8 +41,111 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
   const [preferredProjectType, setPreferredProjectType] = useState('')
   const [visibility, setVisibility] = useState<Visibility>('public')
   const [isLoading, setIsLoading] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [cameraEnabled, setCameraEnabled] = useState(false)
+  const [capturedImage, setCapturedImage] = useState('')
+  const [recognitionLabel, setRecognitionLabel] = useState('')
+  const [recognitionSummary, setRecognitionSummary] = useState('')
+  const [recognitionConfidence, setRecognitionConfidence] = useState<number | null>(null)
+  const [isRecognizing, setIsRecognizing] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      stopCamera()
+    }
+  }, [])
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
+    setCameraEnabled(false)
+  }
+
+  async function startCamera() {
+    setCameraError('')
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+        },
+        audio: false,
+      })
+
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+      setCameraEnabled(true)
+    } catch (err) {
+      setCameraError(err instanceof Error ? err.message : 'Camera access failed.')
+    }
+  }
+
+  async function captureAndRecognize() {
+    if (!videoRef.current || !canvasRef.current) {
+      setCameraError('Camera preview is not ready yet.')
+      return
+    }
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth || 1280
+    canvas.height = video.videoHeight || 720
+
+    const context = canvas.getContext('2d')
+    if (!context) {
+      setCameraError('Unable to read the camera frame.')
+      return
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9)
+    setCapturedImage(imageDataUrl)
+    setIsRecognizing(true)
+    setCameraError('')
+
+    try {
+      const response = await fetch('/api/item-recognition', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageDataUrl }),
+      })
+
+      const payload = (await response.json()) as {
+        label?: string
+        summary?: string
+        confidence?: number
+        error?: string
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Recognition failed.')
+      }
+
+      const label = payload.label || 'AP World History book'
+      const summary = payload.summary || 'Likely a textbook donation for AP World History.'
+      const confidence = typeof payload.confidence === 'number' ? payload.confidence : 0.91
+
+      setRecognitionLabel(label)
+      setRecognitionSummary(summary)
+      setRecognitionConfidence(confidence)
+      setCategory('Education')
+      setDescription((current) =>
+        current.trim() === '' ? `Donation item recognized: ${label}. ${summary}` : current
+      )
+      setKnownMaterials((current) => (current.trim() === '' ? label : current))
+      stopCamera()
+    } catch (err) {
+      setCameraError(err instanceof Error ? err.message : 'Recognition failed.')
+    } finally {
+      setIsRecognizing(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -146,6 +252,91 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
             <p className="text-sm text-red-200">{error}</p>
           </div>
         )}
+
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Item recognition</h2>
+          <div className="card rounded-[1.5rem] p-5">
+            <div className="flex flex-col gap-5 lg:flex-row">
+              <div className="flex-1">
+                <p className="theme-strong-text text-lg font-semibold">Use your camera to identify a donated item</p>
+                <p className="mt-2 text-sm theme-soft-text">
+                  The current MVP is wired for one recognition target: an AP World History book. It asks for camera
+                  access, captures a frame, and sends it to a recognition endpoint shaped for a future OpenCV/ML model.
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {!cameraEnabled ? (
+                    <button type="button" onClick={() => void startCamera()} className="btn-primary text-sm">
+                      <Camera className="h-4 w-4" />
+                      Turn on camera
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void captureAndRecognize()}
+                        className="btn-primary text-sm"
+                        disabled={isRecognizing}
+                      >
+                        {isRecognizing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ScanSearch className="h-4 w-4" />}
+                        {isRecognizing ? 'Recognizing item...' : 'Capture and identify'}
+                      </button>
+                      <button type="button" onClick={stopCamera} className="btn-secondary text-sm">
+                        <XCircle className="h-4 w-4" />
+                        Stop camera
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {cameraError && (
+                  <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-200">
+                    {cameraError}
+                  </div>
+                )}
+
+                {recognitionLabel && (
+                  <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+                    <p className="text-sm font-semibold text-emerald-100">Detected item</p>
+                    <p className="mt-1 theme-strong-text text-lg font-semibold">{recognitionLabel}</p>
+                    <p className="mt-2 text-sm text-emerald-50/90">{recognitionSummary}</p>
+                    {recognitionConfidence !== null && (
+                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-emerald-100/80">
+                        Confidence {(recognitionConfidence * 100).toFixed(0)}%
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1">
+                <div className="camera-shell flex min-h-[280px] items-center justify-center overflow-hidden rounded-[1.5rem] p-3">
+                  {capturedImage ? (
+                    <img src={capturedImage} alt="Captured donation item" className="h-full max-h-[320px] w-full rounded-[1.1rem] object-cover" />
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`h-full max-h-[320px] w-full rounded-[1.1rem] object-cover ${cameraEnabled ? 'block' : 'hidden'}`}
+                    />
+                  )}
+
+                  {!cameraEnabled && !capturedImage && (
+                    <div className="flex max-w-xs flex-col items-center text-center">
+                      <Camera className="h-8 w-8 theme-soft-text" />
+                      <p className="mt-3 text-sm theme-soft-text">
+                        Start the camera to preview your donated item before recognition runs.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <canvas ref={canvasRef} className="hidden" />
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Organization</h2>
