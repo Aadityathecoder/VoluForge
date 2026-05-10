@@ -269,6 +269,25 @@ export function SubmitNeedClient({
         return
       }
 
+      let uploadedImageUrl: string | null = null
+
+      if (capturedImage) {
+        const blob = await (await fetch(capturedImage)).blob()
+        const safeFileName = `${user.id}/${crypto.randomUUID()}.jpg`
+        const { error: uploadError } = await supabase.storage.from('need-images').upload(safeFileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false,
+        })
+
+        if (uploadError) {
+          setError(uploadError.message)
+          return
+        }
+
+        const { data: publicUrlData } = supabase.storage.from('need-images').getPublicUrl(safeFileName)
+        uploadedImageUrl = publicUrlData.publicUrl
+      }
+
       const { error: insertError } = await supabase.from('community_needs').insert({
         submitted_by: user.id,
         organization_name: organizationName.trim(),
@@ -286,6 +305,8 @@ export function SubmitNeedClient({
         known_materials: knownMaterials.trim() || null,
         budget_estimate: budgetNum,
         preferred_project_type: preferredProjectType.trim() || null,
+        image_url: uploadedImageUrl,
+        detected_item_label: recognitionLabel.trim() || null,
         visibility,
         status: 'open',
       })
@@ -342,8 +363,9 @@ export function SubmitNeedClient({
         <div className="mb-8 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4">
           <p className="text-sm font-medium text-sky-100">Demo mode</p>
           <p className="mt-1 text-sm text-sky-50/90">
-            The camera recognition feature is live for testing here. Real community-need submission still requires a
-            signed-in partner account.
+            The camera recognition feature is live for testing here. If your partner profile is not fully set up yet,
+            this page stays usable for item-recognition demo flows, but real community-need submission still requires a
+            signed-in partner profile row in Supabase.
           </p>
         </div>
       )}
@@ -365,7 +387,8 @@ export function SubmitNeedClient({
                 <p className="mt-2 text-sm theme-soft-text">
                   The current MVP is wired for one recognition target: your AP World History book. While the camera is
                   on, the app continuously compares the live frame against your reference cover image and updates the
-                  confidence score in real time.
+                  confidence score in real time. If you submit a real need with a partner profile, the captured item
+                  image can now be saved and shown in the public need card.
                 </p>
 
                 {cameraEnabled && liveConfidence !== null && (

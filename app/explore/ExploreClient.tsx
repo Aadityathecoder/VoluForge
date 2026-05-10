@@ -88,6 +88,16 @@ export function ExploreClient({ initialNeeds }: { initialNeeds: CommunityNeed[] 
           {filteredNeeds.length > 0 ? (
             filteredNeeds.map((need) => (
               <div key={need.id} className="card-hover p-6 lg:p-8">
+                {need.image_url && (
+                  <div className="mb-5 overflow-hidden rounded-2xl border border-white/10">
+                    <img
+                      src={need.image_url}
+                      alt={need.detected_item_label ?? `${need.organization_name} need item`}
+                      className="h-56 w-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100 mb-1">{need.organization_name}</h3>
@@ -99,6 +109,12 @@ export function ExploreClient({ initialNeeds }: { initialNeeds: CommunityNeed[] 
                 </div>
 
                 <p className="text-slate-400 mb-5 leading-relaxed">{need.description}</p>
+
+                {need.detected_item_label && (
+                  <div className="mb-5">
+                    <span className="badge badge-primary text-xs">Detected item: {need.detected_item_label}</span>
+                  </div>
+                )}
 
                 <div className="grid sm:grid-cols-3 gap-4 mb-5 py-4 border-y border-white/10">
                   <div className="flex items-center gap-2 text-sm text-slate-400">

@@ -52,6 +52,8 @@ CREATE TABLE community_needs (
   known_materials TEXT,
   budget_estimate NUMERIC,
   preferred_project_type TEXT,
+  image_url TEXT,
+  detected_item_label TEXT,
   visibility TEXT CHECK (visibility IN ('private', 'local', 'public')) DEFAULT 'local',
   status TEXT CHECK (status IN ('open', 'claimed', 'in_progress', 'completed')) DEFAULT 'open',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

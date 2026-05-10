@@ -33,6 +33,8 @@ export interface CommunityNeed {
   known_materials: string | null;
   budget_estimate: number | null;
   preferred_project_type: string | null;
+  image_url: string | null;
+  detected_item_label: string | null;
   visibility: Visibility;
   status: CommunityNeedStatus;
   created_at: string;
