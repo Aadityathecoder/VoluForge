@@ -55,6 +55,17 @@ html[data-theme='dark'] {
     @apply leading-relaxed;
     color: var(--vf-text-soft);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
@@ -80,6 +91,7 @@ html[data-theme='dark'] {
     @apply pointer-events-none absolute rounded-full blur-[1px];
     background: var(--vf-surface);
     border: 1px solid var(--vf-border);
+    animation: heroFloat 11s ease-in-out infinite;
   }
 
   .hero-panel {
@@ -177,6 +189,193 @@ html[data-theme='dark'] {
     box-shadow: var(--vf-shadow);
   }
 
+  .hero-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .hero-shell::before {
+    content: '';
+    position: absolute;
+    inset: -12% 8% auto;
+    height: 18rem;
+    z-index: -1;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.24), rgba(59, 130, 246, 0.08) 48%, transparent 70%);
+    filter: blur(20px);
+    opacity: 0.6;
+    animation: haloPulse 7s ease-in-out infinite;
+  }
+
+  .hero-stage {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-stage::before {
+    content: '';
+    position: absolute;
+    inset: 12% 18% auto 18%;
+    height: 14rem;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at center, rgba(14, 165, 233, 0.3), rgba(59, 130, 246, 0.12) 36%, transparent 66%);
+    filter: blur(12px);
+    opacity: 0.48;
+    animation: haloPulse 6.2s ease-in-out infinite;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: auto -8% -10% auto;
+    width: 22rem;
+    height: 16rem;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(circle at center, black 42%, transparent 74%);
+    opacity: 0.75;
+    transform: rotate(-8deg);
+    animation: gridShift 14s linear infinite;
+  }
+
+  .hero-orb {
+    position: absolute;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 32% 32%, rgba(255, 255, 255, 0.95), rgba(125, 211, 252, 0.38) 36%, rgba(59, 130, 246, 0.04) 74%);
+    box-shadow: 0 0 32px rgba(125, 211, 252, 0.28);
+    animation: orbDrift 8.5s ease-in-out infinite;
+  }
+
+  .hero-orb-secondary {
+    animation-delay: 1.4s;
+  }
+
+  .assistant-panel {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+    backdrop-filter: blur(18px);
+  }
+
+  html[data-theme='dark'] .assistant-panel {
+    background: rgba(15, 23, 42, 0.84);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .assistant-avatar {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    box-shadow: 0 16px 32px rgba(37, 99, 235, 0.24);
+  }
+
+  .assistant-floating {
+    @apply flex flex-col items-end;
+  }
+
+  .assistant-close {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--vf-text);
+  }
+
+  .assistant-close:hover {
+    background: rgba(226, 232, 240, 0.96);
+  }
+
+  html[data-theme='dark'] .assistant-close {
+    background: rgba(30, 41, 59, 0.82);
+    color: #e2e8f0;
+  }
+
+  .assistant-chip {
+    @apply rounded-full px-3 py-2 text-sm font-medium transition-colors;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: var(--vf-text);
+  }
+
+  .assistant-chip:hover {
+    background: rgba(224, 242, 254, 0.95);
+  }
+
+  html[data-theme='dark'] .assistant-chip {
+    background: rgba(30, 41, 59, 0.78);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+  }
+
+  html[data-theme='dark'] .assistant-chip:hover {
+    background: rgba(14, 165, 233, 0.18);
+  }
+
+  .assistant-input {
+    @apply w-full rounded-full px-4 py-3 text-sm outline-none transition-colors;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: var(--vf-text);
+  }
+
+  html[data-theme='dark'] .assistant-input {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+  }
+
+  .assistant-send {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full transition-all;
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    color: white;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
+  }
+
+  .assistant-send:disabled {
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  .auth-motion-shell {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-motion-shell::before,
+  .auth-motion-shell::after {
+    content: '';
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(18px);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+
+  .auth-motion-shell::before {
+    top: -3rem;
+    left: -2rem;
+    width: 14rem;
+    height: 14rem;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.22), transparent 66%);
+    animation: authOrbOne 9s ease-in-out infinite;
+  }
+
+  .auth-motion-shell::after {
+    right: -3rem;
+    bottom: -4rem;
+    width: 16rem;
+    height: 16rem;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 68%);
+    animation: authOrbTwo 11s ease-in-out infinite;
+  }
+
+  .auth-floating-card {
+    animation: authCardFloat 8s ease-in-out infinite;
+  }
+
+  .auth-floating-card:nth-of-type(2) {
+    animation-delay: 1.5s;
+  }
+
   .camera-shell {
     background:
       radial-gradient(circle at top, rgba(14, 165, 233, 0.18), transparent 40%),
@@ -217,7 +416,7 @@ html[data-theme='dark'] {
   }
 
   .theme-floating {
-    @apply fixed bottom-6 right-6 z-50;
+    @apply fixed bottom-6 right-6 z-50 flex items-end gap-3;
   }
 
   .prose-content {
@@ -276,4 +475,78 @@ html[data-theme='dark'] {
 ::selection {
   background-color: rgba(59, 130, 246, 0.2);
   color: inherit;
+}
+
+@keyframes heroFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--vf-rotate, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(calc(var(--vf-rotate, 0deg) + 2deg));
+  }
+}
+
+@keyframes haloPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes gridShift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+  50% {
+    transform: translate3d(-10px, -6px, 0) rotate(-6deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+}
+
+@keyframes orbDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes authOrbOne {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1rem, 1.5rem, 0) scale(1.08);
+  }
+}
+
+@keyframes authOrbTwo {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-1.25rem, -1rem, 0) scale(1.1);
+  }
+}
+
+@keyframes authCardFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
 }

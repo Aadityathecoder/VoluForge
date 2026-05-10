@@ -112,12 +112,24 @@ export async function generateProjectKit(need: CommunityNeed): Promise<{
   error?: string
 }> {
   try {
-    const provider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai'
+    const provider = process.env.OPENROUTER_API_KEY
+      ? 'openrouter'
+      : process.env.OPENAI_API_KEY
+        ? 'openai'
+        : process.env.ANTHROPIC_API_KEY
+          ? 'anthropic'
+          : null
+
+    if (!provider) {
+      throw new Error('Configure OPENROUTER_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY for project kit generation.')
+    }
 
     let response: string
 
     if (provider === 'anthropic') {
       response = await generateWithAnthropic(need)
+    } else if (provider === 'openrouter') {
+      response = await generateWithOpenRouter(need)
     } else {
       response = await generateWithOpenAI(need)
     }
@@ -178,7 +190,115 @@ Generate a complete, practical student-led project kit for this need.
 }
 
 async function generateWithOpenAI(_need: CommunityNeed): Promise<string> {
-  throw new Error('OpenAI integration not yet implemented')
+  const need = _need
+  const userPrompt = `
+Community Need:
+Organization: ${need.organization_name}
+Category: ${need.category}
+Description: ${need.description}
+Beneficiaries: ${need.beneficiaries}
+Estimated People Impacted: ${need.estimated_people_impacted ?? 'Unknown'}
+Location: ${need.location}
+Deadline: ${need.deadline ?? 'Flexible'}
+Age Restrictions: ${need.age_restrictions ?? 'None specified'}
+Safety Concerns: ${need.safety_concerns ?? 'None mentioned'}
+Known Materials: ${need.known_materials ?? 'None specified'}
+Budget Available: ${need.budget_estimate != null ? `$${need.budget_estimate}` : 'Unknown'}
+Preferred Project Type: ${need.preferred_project_type ?? 'Not specified'}
+
+Generate a complete, practical student-led project kit for this need.
+`
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      input: [
+        {
+          role: 'system',
+          content: [{ type: 'input_text', text: SYSTEM_PROMPT }],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'input_text', text: userPrompt }],
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`OpenAI project kit request failed: ${errorText}`)
+  }
+
+  const payload = (await response.json()) as {
+    output_text?: string
+  }
+
+  if (!payload.output_text) {
+    throw new Error('OpenAI project kit response returned no text.')
+  }
+
+  return payload.output_text
+}
+
+async function generateWithOpenRouter(need: CommunityNeed): Promise<string> {
+  const userPrompt = `
+Community Need:
+Organization: ${need.organization_name}
+Category: ${need.category}
+Description: ${need.description}
+Beneficiaries: ${need.beneficiaries}
+Estimated People Impacted: ${need.estimated_people_impacted ?? 'Unknown'}
+Location: ${need.location}
+Deadline: ${need.deadline ?? 'Flexible'}
+Age Restrictions: ${need.age_restrictions ?? 'None specified'}
+Safety Concerns: ${need.safety_concerns ?? 'None mentioned'}
+Known Materials: ${need.known_materials ?? 'None specified'}
+Budget Available: ${need.budget_estimate != null ? `$${need.budget_estimate}` : 'Unknown'}
+Preferred Project Type: ${need.preferred_project_type ?? 'Not specified'}
+
+Generate a complete, practical student-led project kit for this need.
+`
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b:free',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`OpenRouter project kit request failed: ${errorText}`)
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string
+      }
+    }>
+  }
+
+  const text = payload.choices?.[0]?.message?.content?.trim()
+  if (!text) {
+    throw new Error('OpenRouter project kit response returned no text.')
+  }
+
+  return text
 }
 
 export async function generateProjectKitAction(_needId: string, needData: CommunityNeed) {

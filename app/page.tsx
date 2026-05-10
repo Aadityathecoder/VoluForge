@@ -1,14 +1,16 @@
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div className="hero-accent left-[6%] top-28 h-24 w-72 rotate-[-12deg]" />
-      <div className="hero-accent right-[12%] top-36 h-20 w-56 rotate-[20deg]" />
-      <div className="hero-accent bottom-14 right-[8%] h-28 w-80 rotate-[-14deg]" />
+      <div className="hero-accent left-[6%] top-28 h-24 w-72" style={{ ['--vf-rotate' as string]: '-12deg' }} />
+      <div className="hero-accent right-[12%] top-36 h-20 w-56" style={{ ['--vf-rotate' as string]: '20deg' }} />
+      <div className="hero-accent bottom-14 right-[8%] h-28 w-80" style={{ ['--vf-rotate' as string]: '-14deg' }} />
+      <div className="hero-orb left-[10%] top-[18%] h-16 w-16 opacity-80" />
+      <div className="hero-orb bottom-[24%] right-[17%] h-10 w-10 opacity-70" />
 
-      <section className="container-max relative pt-16 pb-24 md:pt-20">
+      <section className="container-max hero-shell relative pt-16 pb-24 md:pt-20">
         <div className="mx-auto max-w-5xl text-center">
           <div className="hero-panel inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium theme-soft-text shadow-sm">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -47,7 +49,8 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto mt-16 max-w-5xl">
-          <div className="glass-panel overflow-hidden rounded-[2rem] p-4 md:p-6">
+          <div className="glass-panel hero-stage overflow-hidden rounded-[2rem] p-4 md:p-6">
+            <div className="hero-grid hidden lg:block" />
             <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
               <div className="hero-panel rounded-[1.5rem] p-6">
                 <div className="flex items-center justify-between">

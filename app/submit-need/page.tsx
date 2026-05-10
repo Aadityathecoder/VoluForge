@@ -16,25 +16,7 @@ export default async function SubmitNeedPage() {
       redirect(`/auth/login?next=/submit-need`)
     }
 
-    return (
-      <div className="container-max max-w-xl py-16">
-        <div className="card p-8">
-          <h1 className="mb-3 text-xl font-semibold text-slate-50">Guest mode is browse-only here</h1>
-          <p className="mb-6 leading-relaxed text-slate-400">
-            You can explore the dashboard and project flows as a guest, but submitting a real community need requires a
-            signed-in partner account.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard" className="btn-secondary text-sm">
-              View dashboard
-            </Link>
-            <Link href="/auth/signup" className="btn-primary text-sm">
-              Create partner account
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+    return <SubmitNeedClient defaultContactName="Guest demo" demoMode />
   }
 
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle()
@@ -57,25 +39,7 @@ export default async function SubmitNeedPage() {
   }
 
   if (profile.role !== 'partner') {
-    return (
-      <div className="container-max py-16 max-w-xl">
-        <div className="card p-8">
-          <h1 className="text-xl font-semibold text-slate-50 mb-3">Community partners only</h1>
-          <p className="text-slate-400 leading-relaxed mb-6">
-            Submitting a community need is limited to accounts registered as <strong className="text-slate-200">community partners</strong>.
-            Student and advisor accounts can browse needs and build project kits instead.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/explore" className="btn-primary text-sm">
-              Browse needs
-            </Link>
-            <Link href="/dashboard" className="btn-secondary text-sm">
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+    return <SubmitNeedClient defaultContactName={profile.full_name ?? ''} demoMode />
   }
 
   return <SubmitNeedClient defaultContactName={profile.full_name ?? ''} />

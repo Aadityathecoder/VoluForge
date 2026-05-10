@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Camera, CheckCircle2, LoaderCircle, ScanSearch, XCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import {
+  calculateBookMatchScore,
+  cropForBookFocus,
+  extractFeaturesFromImageData,
+  getSampleSize,
+  type MatchFeatures,
+} from '@/lib/itemRecognition'
 import type { Visibility } from '@/types/database'
 
 const CATEGORIES = [
@@ -19,11 +26,20 @@ const CATEGORIES = [
   'Other',
 ]
 
-export function SubmitNeedClient({ defaultContactName }: { defaultContactName: string }) {
+export function SubmitNeedClient({
+  defaultContactName,
+  demoMode = false,
+}: {
+  defaultContactName: string
+  demoMode?: boolean
+}) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const analysisCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const matchIntervalRef = useRef<number | null>(null)
+  const referenceFeaturesRef = useRef<MatchFeatures | null>(null)
   const [organizationName, setOrganizationName] = useState('')
   const [contactName, setContactName] = useState(defaultContactName)
   const [contactEmail, setContactEmail] = useState('')
@@ -44,6 +60,7 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
   const [cameraError, setCameraError] = useState('')
   const [cameraEnabled, setCameraEnabled] = useState(false)
   const [capturedImage, setCapturedImage] = useState('')
+  const [liveConfidence, setLiveConfidence] = useState<number | null>(null)
   const [recognitionLabel, setRecognitionLabel] = useState('')
   const [recognitionSummary, setRecognitionSummary] = useState('')
   const [recognitionConfidence, setRecognitionConfidence] = useState<number | null>(null)
@@ -52,21 +69,92 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
   const [done, setDone] = useState(false)
 
   useEffect(() => {
+    void loadReferenceFeatures()
+
     return () => {
+      stopMatchingLoop()
       stopCamera()
     }
   }, [])
 
+  function stopMatchingLoop() {
+    if (matchIntervalRef.current !== null) {
+      window.clearInterval(matchIntervalRef.current)
+      matchIntervalRef.current = null
+    }
+  }
+
   function stopCamera() {
+    stopMatchingLoop()
     streamRef.current?.getTracks().forEach((track) => track.stop())
     streamRef.current = null
     setCameraEnabled(false)
   }
 
+  async function loadReferenceFeatures() {
+    if (referenceFeaturesRef.current) return
+
+    const image = new Image()
+    image.src = '/reference/ap-world-history-book.jpg'
+
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('Reference image failed to load.'))
+    })
+
+    const canvas = document.createElement('canvas')
+    const { width, height } = getSampleSize()
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext('2d')
+    if (!context) {
+      throw new Error('Reference image analysis is unavailable.')
+    }
+
+    cropForBookFocus(context, image, image.naturalWidth, image.naturalHeight)
+    const imageData = context.getImageData(0, 0, width, height)
+    referenceFeaturesRef.current = extractFeaturesFromImageData(imageData)
+  }
+
+  function startMatchingLoop() {
+    stopMatchingLoop()
+
+    matchIntervalRef.current = window.setInterval(() => {
+      if (!videoRef.current || !analysisCanvasRef.current || !referenceFeaturesRef.current) {
+        return
+      }
+
+      const video = videoRef.current
+      if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+        return
+      }
+
+      const canvas = analysisCanvasRef.current
+      const { width, height } = getSampleSize()
+      canvas.width = width
+      canvas.height = height
+      const context = canvas.getContext('2d')
+      if (!context) {
+        return
+      }
+
+      cropForBookFocus(context, video, video.videoWidth, video.videoHeight)
+      const frameData = context.getImageData(0, 0, width, height)
+      const frameFeatures = extractFeaturesFromImageData(frameData)
+      const score = calculateBookMatchScore(frameFeatures, referenceFeaturesRef.current)
+      setLiveConfidence(score)
+    }, 350)
+  }
+
   async function startCamera() {
     setCameraError('')
+    setCapturedImage('')
+    setRecognitionLabel('')
+    setRecognitionSummary('')
+    setRecognitionConfidence(null)
 
     try {
+      await loadReferenceFeatures()
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
@@ -79,13 +167,14 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
         videoRef.current.srcObject = stream
       }
       setCameraEnabled(true)
+      startMatchingLoop()
     } catch (err) {
       setCameraError(err instanceof Error ? err.message : 'Camera access failed.')
     }
   }
 
   async function captureAndRecognize() {
-    if (!videoRef.current || !canvasRef.current) {
+    if (!videoRef.current || !canvasRef.current || !analysisCanvasRef.current || !referenceFeaturesRef.current) {
       setCameraError('Camera preview is not ready yet.')
       return
     }
@@ -108,37 +197,35 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
     setCameraError('')
 
     try {
-      const response = await fetch('/api/item-recognition', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageDataUrl }),
-      })
-
-      const payload = (await response.json()) as {
-        label?: string
-        summary?: string
-        confidence?: number
-        error?: string
+      const analysisCanvas = analysisCanvasRef.current
+      const analysisContext = analysisCanvas.getContext('2d')
+      if (!analysisContext) {
+        throw new Error('Recognition analysis is unavailable.')
       }
 
-      if (!response.ok) {
-        throw new Error(payload.error || 'Recognition failed.')
-      }
-
-      const label = payload.label || 'AP World History book'
-      const summary = payload.summary || 'Likely a textbook donation for AP World History.'
-      const confidence = typeof payload.confidence === 'number' ? payload.confidence : 0.91
+      const { width, height } = getSampleSize()
+      analysisCanvas.width = width
+      analysisCanvas.height = height
+      cropForBookFocus(analysisContext, video, video.videoWidth, video.videoHeight)
+      const frameData = analysisContext.getImageData(0, 0, width, height)
+      const frameFeatures = extractFeaturesFromImageData(frameData)
+      const confidence = calculateBookMatchScore(frameFeatures, referenceFeaturesRef.current)
+      const isMatch = confidence >= 0.72
+      const label = isMatch ? 'AP World History book' : 'Uncertain item'
+      const summary = isMatch
+        ? 'Live camera matching found a strong similarity to the reference AP World History book cover.'
+        : 'The current frame does not look close enough to the AP World History reference cover yet. Center the book and reduce glare.'
 
       setRecognitionLabel(label)
       setRecognitionSummary(summary)
       setRecognitionConfidence(confidence)
-      setCategory('Education')
-      setDescription((current) =>
-        current.trim() === '' ? `Donation item recognized: ${label}. ${summary}` : current
-      )
-      setKnownMaterials((current) => (current.trim() === '' ? label : current))
+      if (isMatch) {
+        setCategory('Education')
+        setDescription((current) =>
+          current.trim() === '' ? `Donation item recognized: ${label}. ${summary}` : current
+        )
+        setKnownMaterials((current) => (current.trim() === '' ? label : current))
+      }
       stopCamera()
     } catch (err) {
       setCameraError(err instanceof Error ? err.message : 'Recognition failed.')
@@ -150,6 +237,12 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (demoMode) {
+      setError('Demo mode is enabled on this page. Camera recognition works, but real submission requires a partner account.')
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -245,6 +338,16 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
         Describe what would help your organization. Student teams use this to scope projects and generate structured plans.
       </p>
 
+      {demoMode && (
+        <div className="mb-8 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4">
+          <p className="text-sm font-medium text-sky-100">Demo mode</p>
+          <p className="mt-1 text-sm text-sky-50/90">
+            The camera recognition feature is live for testing here. Real community-need submission still requires a
+            signed-in partner account.
+          </p>
+        </div>
+      )}
+
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-8 card p-8 lg:p-10">
         {error && (
           <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-4 flex gap-3">
@@ -260,9 +363,21 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
               <div className="flex-1">
                 <p className="theme-strong-text text-lg font-semibold">Use your camera to identify a donated item</p>
                 <p className="mt-2 text-sm theme-soft-text">
-                  The current MVP is wired for one recognition target: an AP World History book. It asks for camera
-                  access, captures a frame, and sends it to a recognition endpoint shaped for a future OpenCV/ML model.
+                  The current MVP is wired for one recognition target: your AP World History book. While the camera is
+                  on, the app continuously compares the live frame against your reference cover image and updates the
+                  confidence score in real time.
                 </p>
+
+                {cameraEnabled && liveConfidence !== null && (
+                  <div className="mt-4 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4">
+                    <p className="text-sm font-semibold text-sky-100">Live match confidence</p>
+                    <p className="mt-1 text-2xl font-semibold theme-strong-text">{(liveConfidence * 100).toFixed(0)}%</p>
+                    <p className="mt-2 text-sm text-sky-50/90">
+                      Hold the book upright in the center of the frame. The score should rise as the cover layout and
+                      colors line up with the reference image.
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-3">
                   {!cameraEnabled ? (
@@ -333,6 +448,7 @@ export function SubmitNeedClient({ defaultContactName }: { defaultContactName: s
                   )}
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
+                <canvas ref={analysisCanvasRef} className="hidden" />
               </div>
             </div>
           </div>

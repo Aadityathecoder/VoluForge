@@ -65,7 +65,7 @@ export function LoginForm() {
 
   return (
     <div className="container-max py-8 md:py-12">
-      <div className="auth-shell grid overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
+      <div className="auth-shell auth-motion-shell grid overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
         <div className="auth-side-panel border-b p-8 lg:border-b-0 lg:border-r lg:p-12">
           <div className="relative z-10">
             <div className="badge inline-flex gap-2 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em]">
@@ -95,7 +95,7 @@ export function LoginForm() {
                   body: 'Students, partners, and advisors each land in the right workspace after sign-in.',
                 },
               ].map(({ icon: Icon, title, body }) => (
-                <div key={title} className="card rounded-2xl p-5">
+                <div key={title} className="card auth-floating-card rounded-2xl p-5">
                   <div className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-400/20 bg-sky-500/10">
                       <Icon className="h-5 w-5 text-sky-500" />

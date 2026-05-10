@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Navbar } from '@/components/layout/Navbar'
+import { SiteAssistant } from '@/components/layout/SiteAssistant'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 export const viewport: Viewport = {
@@ -37,6 +38,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <div className="theme-floating">
+          <SiteAssistant />
           <ThemeToggle />
         </div>
       </body>

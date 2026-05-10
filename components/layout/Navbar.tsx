@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -43,12 +44,17 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/55 shadow-nav backdrop-blur-2xl supports-[backdrop-filter]:bg-white/45 dark:border-white/10 dark:bg-slate-950/35">
-      <div className="container-max">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight theme-strong-text">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500 text-xs font-bold text-white shadow-[0_12px_30px_rgba(14,165,233,0.2)]">
-              VF
-            </div>
+      <div className="mx-auto max-w-7xl px-2 sm:px-3 lg:px-4">
+        <div className="flex h-16 items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 font-bold text-xl tracking-tight theme-strong-text">
+            <Image
+              src="/branding/voluforge-logo.png"
+              alt="VoluForge logo"
+              width={44}
+              height={44}
+              className="h-11 w-11 object-cover"
+              priority
+            />
             <div>
               <span className="block text-[1.05rem] leading-none">VoluForge</span>
               <span className="theme-soft-text mt-0.5 hidden text-[10px] font-medium uppercase tracking-[0.22em] md:block">
