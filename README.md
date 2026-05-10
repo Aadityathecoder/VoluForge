@@ -1,4 +1,4 @@
-# VoluForge MVP
+# VoluForge 
 
 Turn community needs into student-led action.
 
