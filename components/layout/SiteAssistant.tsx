@@ -59,15 +59,15 @@ export function SiteAssistant() {
   return (
     <div className="assistant-floating">
       {open && (
-        <div className="assistant-panel mb-3 w-[min(25rem,calc(100vw-1.25rem))] rounded-[1.75rem] p-4 sm:p-5">
+        <div className="assistant-panel assistant-mobile-shell assistant-mobile-center mb-3 w-[min(25rem,calc(100vw-1rem))] rounded-[1.5rem] p-3.5 sm:w-[25rem] sm:rounded-[1.75rem] sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="assistant-avatar mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl">
+              <div className="assistant-avatar mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl sm:h-11 sm:w-11">
                 <Bot className="h-5 w-5 text-sky-50" />
               </div>
               <div>
-                <p className="theme-strong-text text-base font-semibold">Forge</p>
-                <p className="theme-soft-text text-sm">VoluForge AI assistant</p>
+                <p className="theme-strong-text text-[15px] font-semibold sm:text-base">Forge</p>
+                <p className="theme-soft-text text-xs sm:text-sm">VoluForge AI assistant</p>
               </div>
             </div>
 
@@ -76,11 +76,11 @@ export function SiteAssistant() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-[22rem] space-y-3 overflow-y-auto pr-1">
+          <div className="mt-3 max-h-[min(52vh,22rem)] space-y-2.5 overflow-y-auto pr-1 sm:mt-4 sm:space-y-3">
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
-                className={`rounded-2xl px-4 py-3 text-sm leading-6 ${
+                className={`rounded-2xl px-3.5 py-2.5 text-sm leading-6 sm:px-4 sm:py-3 ${
                   message.role === 'assistant'
                     ? 'bg-white/70 text-slate-700 dark:bg-slate-900/50 dark:text-slate-100'
                     : 'bg-sky-500 text-white'
@@ -90,7 +90,7 @@ export function SiteAssistant() {
               </div>
             ))}
             {isPending && (
-              <div className="rounded-2xl bg-white/70 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-200">
+              <div className="rounded-2xl bg-white/70 px-3.5 py-2.5 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-200 sm:px-4 sm:py-3">
                 <span className="inline-flex items-center gap-2">
                   <LoaderCircle className="h-4 w-4 animate-spin" />
                   Thinking…
@@ -101,7 +101,7 @@ export function SiteAssistant() {
 
           {error && <p className="mt-3 text-sm text-red-500 dark:text-red-300">{error}</p>}
 
-          <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
+          <form onSubmit={handleSubmit} className="mt-3 flex items-center gap-2 sm:mt-4">
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
