@@ -1,0 +1,10 @@
+import { Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
+export const day = (value: string) => new Date(value.length === 10 ? value + 'T12:00:00' : value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+export const fullDay = (value: string) => new Date(value).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+export const time = (value: string) => new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+export const hours = (minutes: number) => Number((minutes / 60).toFixed(1)).toString();
+export const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+export const buzz = () => { if (Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {}); };
+export const errorText = (e: unknown) => e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+export const causeIcon = (cause: string) => ({ Environment: 'leaf-outline', Education: 'book-outline', 'Food security': 'nutrition-outline', Community: 'heart-outline' }[cause] ?? 'heart-outline') as 'leaf-outline'|'book-outline'|'nutrition-outline'|'heart-outline';

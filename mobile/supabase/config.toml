@@ -1,0 +1,9 @@
+# This folder is a deployable Supabase migration/function bundle.
+# For a new local Supabase project, run `supabase init` in a temporary folder and
+# copy this functions section into its generated config (preserve local defaults).
+project_id = "voluforge-native"
+
+[functions.delete-account]
+# The function verifies JWTs with auth.getUser(token), including asymmetric JWTs.
+# No request is trusted simply because the gateway accepted an API key.
+verify_jwt = false

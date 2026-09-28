@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+ios/
+android/
+.env
+.env.*
+!.env.example
+*.ipa
+*.p12
+*.mobileprovision
+*.keystore
+.DS_Store
