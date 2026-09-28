@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { approvedHours, validateService, timerMinutes, safeEmail, localDate } from '../src/data/domain';
+import { createDemo, demoOpportunities } from '../src/data/demo';
+const sample=createDemo();const accepted=sample.applications.find(a=>a.status==='accepted')!;
+const opp=demoOpportunities().find(o=>o.id===accepted.opportunityId)!;
+test('only approved entries count, irrespective of pending or rejected durations',()=>{assert.equal(approvedHours([...sample.entries,{...sample.entries[0],id:'pending',status:'pending',minutes:700},{...sample.entries[0],id:'rejected',status:'rejected',minutes:700}]),24);});
+test('unaccepted applications cannot submit service',()=>{assert.throws(()=>validateService({applicationId:accepted.id,date:localDate(new Date()),minutes:60,notes:'Community pantry work'}, {...accepted,status:'pending'},opp),/accepted/);});
+test('reject impossible and future dates, zero, negative and excessive duration',()=>{for(const values of [{date:'2026-02-30',minutes:60},{date:'2099-01-01',minutes:60},{date:localDate(new Date()),minutes:0},{date:localDate(new Date()),minutes:-1},{date:localDate(new Date()),minutes:721}]) assert.throws(()=>validateService({applicationId:accepted.id,notes:'Community pantry work',...values},accepted,opp));});
+test('proof requirement is enforced',()=>{assert.throws(()=>validateService({applicationId:accepted.id,date:localDate(new Date()),minutes:60,notes:'Community pantry work'},accepted,{...opp,startsAt:'2020-01-01T00:00:00Z',proofRequired:true}),/proof/);});
+test('email is normalized and malformed addresses rejected',()=>{assert.equal(safeEmail(' ALEX@EXAMPLE.COM '),'alex@example.com');assert.throws(()=>safeEmail('alex@'));});
+test('timer uses elapsed clock time and excludes partial minutes',()=>{assert.equal(timerMinutes('2026-01-01T10:00:00Z',Date.parse('2026-01-01T11:02:59Z')),62);assert.throws(()=>timerMinutes('2026-01-01T10:00:00Z',Date.parse('2026-01-01T10:00:30Z')),/minute/);});
