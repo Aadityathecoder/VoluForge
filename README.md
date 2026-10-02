@@ -45,6 +45,16 @@ AI-assisted project-kit experiments already exist in the codebase, but AI is not
 - `lib/` — Supabase, AI, guest-session, and utility code
 - `types/` — shared TypeScript models
 
+## Database schema
+
+The [shared Supabase database](database/README.md) defines profiles, organizations,
+staff memberships, opportunities, bookmarks, applications, service entries, timers,
+and audit events. It includes access policies, workflow functions, private proof
+storage, an [entity relationship diagram and data dictionary](database/SCHEMA.md),
+and a reproducible database regression runner. The baseline reuses the existing
+mobile backend and is available to both clients; connecting the Next.js prototype
+to this service workflow remains application work.
+
 ## Development setup
 
 Prerequisites: Node.js, npm, and a Supabase project for database-backed functionality.
@@ -66,7 +76,7 @@ Before testing Supabase-backed flows, replace the placeholder values in `.env.lo
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-The AI-related keys in `.env.example` are optional for the existing project-kit experiments and are not needed for the documented MVP. The repository does not yet provide an automated database bootstrap command; review the SQL files in `database/` before applying them to a Supabase project.
+The AI-related keys in `.env.example` are optional for the existing project-kit experiments and are not needed for the documented MVP. Follow the [database setup guide](database/README.md#apply-the-schema) for the shared volunteer-service schema. The legacy `database/schema.sql` remains specific to the community-needs and project-kit prototype.
 
 To verify that the application compiles:
 
