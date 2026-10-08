@@ -1,8 +1,14 @@
 # VoluForge native backend
 
-This is an additive Supabase backend for the native app. It is supplied as source code, not deployed. All application objects use `vf_` names; the `vf_private` schema holds authorization helpers. Existing website tables are not migrated or renamed.
+This is an additive Supabase backend for the native app. The baseline and opportunity-detail migration are deployed to the existing VoluForge Free project (`urljfugiaylhrmlyamqf`), along with the deletion function. All application objects use `vf_` names; the `vf_private` schema holds authorization helpers. Existing website tables are not migrated or renamed.
 
 Use a dedicated Supabase project for a separate native release, or deliberately share Auth with the existing website. In a shared project, deleting an account deletes that Supabase identity everywhere, including any legacy tables whose foreign keys cascade from `auth.users`. Review legacy foreign keys/storage policies before choosing shared Auth. Existing users are backfilled into `vf_profiles` by the migration.
+
+## Current deployment and migration history
+
+The two migrations were applied through SQL Editor. Before using `supabase db push` against this existing project, inspect `supabase migration list` and reconcile manually applied versions with the CLI history. Only after confirming the objects match, mark `202609280001` and `202610050001` applied using `supabase migration repair VERSION --status applied`. Do not reapply the baseline or the column-addition migration. New projects should apply both migrations normally.
+
+Three exact Auth return URLs were saved with user approval: `voluforge://auth/callback`, `http://localhost:8081/auth/callback`, and the current Expo tunnel callback listed in the phone guide. The legacy JWT gateway check is off only for `delete-account`; the handler still authenticates each user with `auth.getUser`. An unauthenticated live invocation returned HTTP 401. Full authenticated cleanup remains a disposable-account test.
 
 ## Deploy
 
@@ -100,6 +106,6 @@ The migration was applied successfully to PGlite (PostgreSQL in WASM) using ligh
 
 The deletion handler also passed seven Node unit tests with explicit Auth/Storage mocks: method/JWT/confirmation checks, authenticated-user identity binding, ordered cleanup, and failure/retry behavior. After installing the app dependencies, run `node --test supabase/tests/delete-account.test.mjs` from the app root. These tests transpile and execute the actual handler source; they do not contact a Supabase project.
 
-PGlite checks SQL/PLpgSQL, database constraints, grants, RLS, and transition behavior. It does not simulate Supabase's hosted Auth, Storage byte transport, Edge runtime, concurrent connections, or email delivery. The Edge Function has not been deployed or exercised against a live project here. Staging tests listed above remain release gates.
+PGlite checks SQL/PLpgSQL, database constraints, grants, RLS, and transition behavior. It does not simulate Supabase's hosted Auth, Storage byte transport, Edge runtime, concurrent connections, or email delivery. The Edge Function is deployed; a live unauthenticated request was rejected with HTTP 401 by the handler. Authenticated cleanup and the staging tests listed above remain release gates.
 
 Primary references: [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [database functions](https://supabase.com/docs/guides/database/functions), [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals), [Storage deletion](https://supabase.com/docs/guides/storage/management/delete-objects), [Auth user deletion](https://supabase.com/docs/guides/auth/managing-user-data).

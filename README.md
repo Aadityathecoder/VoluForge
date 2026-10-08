@@ -6,6 +6,10 @@ VoluForge is a responsive web platform being built to connect high-school studen
 
 > **Development status:** VoluForge is an active prototype. The repository currently contains early community-need, AI project-kit, authentication, and dashboard experiments. The opportunity, application, time-tracking, verification, and export workflow described in the MVP documentation is planned and is not yet fully implemented end to end.
 
+**Website:** The website now shares the Expo app screens and features, with responsive desktop layouts. See [website build and deployment guide](mobile/docs/WEBSITE.md).
+
+**Expo app:** The native app in `mobile/` includes the student service workflow and the new matching, outcome, graph, community insights, and partner planning features. See [native feature guide and deployment status](mobile/docs/IMPACT_PLATFORM.md).
+
 ## Problem and intended users
 
 Students often struggle to find credible service work that matches their actual skills, while nonprofits may lack a simple way to recruit student volunteers and validate what they completed. VoluForge is intended to close that loop for three user groups:
@@ -85,3 +89,7 @@ npm run build
 ```
 
 The production build passed locally on September 18, 2026. This confirms compilation; it does not confirm that every prototype or planned MVP flow is connected to a live backend.
+
+## Website API layer
+
+See [endpoint reference and sequential HTTP/SQL verification](docs/api-layer.md). Run the website server only; no Expo server is needed. Full Supabase HTTP testing remains pending private connection configuration.

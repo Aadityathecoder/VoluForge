@@ -1,8 +1,10 @@
 import type { Application, Opportunity, Profile, ServiceEntry, Timer } from './models';
+import type { Outcome } from './impactEngine';
 import { localDate } from './domain';
 
 export interface DemoSnapshot {
   version: 1;
+  outcomes?: Outcome[];
   profile: Profile;
   savedIds: string[];
   applications: Application[];
@@ -56,8 +58,18 @@ export function demoOpportunities(): Opportunity[] {
       proofRequired: false, imageUrl: '', imageKey: 'tutoring', remote: true, status: 'open', demo: true,
     },
   ];
+  const specialistRoles: Opportunity[] = [
+    {skill:'Coding',title:'Build a better way to help.',metric:'website improvements shipped',target:3,experience:3},
+    {skill:'Marketing',title:'Give a good cause a louder voice.',metric:'fundraising campaign assets delivered',target:4,experience:0},
+    {skill:'Design',title:'Make the mission easier to see.',metric:'accessible awareness materials created',target:5,experience:1},
+  ].map((role,i)=>({...opportunities[3],id:'demo-specialist-'+i,organizationId:'demo-org-community',organization:'Good Neighbors Studio',title:role.title,cause:'Community',description:`Use your ${role.skill.toLowerCase()} skills on a defined nonprofit project. Meet with an adult coordinator, agree on deliverables, and submit completed work for partner review. This is a fictional sample opportunity.`,skills:[role.skill],requirements:['Meet the adult project coordinator','Use only approved project resources','Agree on a clear scope before starting'],startsAt:eventDate(10+i,14),endsAt:eventDate(10+i,16),minimumExperience:role.experience,outcomeMetric:role.metric,outcomeTarget:role.target,capacity:4,spotsLeft:4}));
   const history = opportunities.filter(o => o.id !== 'demo-literacy').map(o => ({...o,id:o.id+'-past',title:o.title+' · previous session',startsAt:eventDate(-28,9),endsAt:eventDate(-28,12),status:'closed' as const}));
-  return [...opportunities,...history];
+  // Leave an opportunity unapplied so a first-time demo can exercise Apply.
+  const newOpportunity: Opportunity = {
+    ...opportunities[1], id: 'demo-pantry-new', title: 'Make room for a little good.',
+    startsAt: eventDate(12, 10), endsAt: eventDate(12, 13), spotsLeft: 16,
+  };
+  return [...opportunities,newOpportunity,...specialistRoles,...history].map(o=>({...o, minimumExperience:o.minimumExperience??0, urgency:o.cause==='Food security'?5:2, outcomeMetric:o.outcomeMetric??(o.cause==='Food security'?'meal kits packed':o.cause==='Environment'?'kg of litter collected':'students supported'),outcomeTarget:o.outcomeTarget??(o.cause==='Food security'?100:o.cause==='Environment'?50:10)}));
 }
 
 export function createDemo(): DemoSnapshot {
@@ -79,6 +91,7 @@ export function createDemo(): DemoSnapshot {
   return {
     version: 1,
     profile: { id: 'demo-student', name: 'Alex', email: '', school: 'Your school', bio: 'A little time can make a lot of difference.', skills: ['Teamwork', 'Communication'], causes: ['Environment', 'Education'], goalHours: 40, role: 'student', demo: true },
+    outcomes: entries.filter(e=>e.status==='approved').map((e,i)=>({id:'demo-outcome-'+i,service_entry_id:e.id,metric:i===0?'meal kits packed':i===1?'kg of litter collected':'students supported',quantity:[80,24,12][i],evidence:'Fictional partner tally used to demonstrate outcome verification.',status:'approved',review_note:'Sample approval only',reviewed_at:createdAt})),
     savedIds: ['demo-coast'], applications, entries, timer: null,
   };
 }

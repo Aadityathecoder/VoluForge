@@ -7,3 +7,9 @@ out
 npm-debug.log*
 .DS_Store
 *.tsbuildinfo
+
+# Expo export embeds font assets beneath paths containing node_modules.
+!public/voluforge/**
+
+.venv/
+__pycache__/

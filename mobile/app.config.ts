@@ -9,6 +9,7 @@ const config: ExpoConfig = {
   },
   android: { package: 'com.aadityamitra.voluforge', adaptiveIcon: { foregroundImage: './assets/icon.png', backgroundColor: '#F8F5ED' } },
   web: { favicon: './assets/favicon.png', name: 'VoluForge', description: 'A little time. A lot of good.' },
+  experiments: { baseUrl: process.env.VOLUFORGE_WEBSITE_BUILD ? '/voluforge' : '' },
   plugins: ['expo-secure-store'],
   extra: process.env.EAS_PROJECT_ID ? { eas: { projectId: process.env.EAS_PROJECT_ID } } : {},
 };

@@ -1,9 +1,12 @@
 {
-	"name": "voluforge-database-tests",
-	"private": true,
-	"type": "module",
-	"scripts": { "test": "node validate.mjs" },
-	"dependencies": {
-		"@electric-sql/pglite": "^0.5.8"
-	}
+  "name": "voluforge-database-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node validate.mjs",
+    "demo": "node demo.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }

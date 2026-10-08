@@ -1,6 +1,6 @@
 # Volunteer-service schema
 
-The executable source is [the shared baseline migration](migrations/202609280001_voluforge_native.sql). All application tables live in `public`; authorization helpers live in the unexposed `vf_private` schema. Supabase owns `auth.users` and Storage.
+The executable source is [the shared baseline migration](migrations/202609280001_voluforge_native.sql) plus [the opportunity-detail migration](migrations/202610050001_opportunity_details.sql). All application tables live in `public`; authorization helpers live in the unexposed `vf_private` schema. Supabase owns `auth.users` and Storage.
 
 ## Entity relationship diagram
 
@@ -30,7 +30,7 @@ The diagram shows primary ownership relationships. Additional user references in
 | `vf_profiles` | `id` → `auth.users.id` | Name, school, bio, skills, causes, goal hours, deletion freeze, creation time. Created by Auth trigger; goal 1–10,000 hours. |
 | `vf_organizations` | `id` UUID | Name, description, HTTPS website, verified flag, creation time. Only trusted operators verify. |
 | `vf_org_staff` | `(org_id, user_id)` | Organization membership, `owner`/`reviewer` role, active flag. Membership and verified organization are both required for staff operations. Both roles currently have the same workflow permissions. |
-| `vf_opportunities` | `id` UUID | Organization, title, description, category, location/remote, HTTPS image, start/end, capacity, minimum age, skills, proof requirement, publication status. End follows start; capacity 1–10,000. |
+| `vf_opportunities` | `id` UUID | Organization, title, description, category, location/remote, address, paired bounded latitude/longitude, volunteer requirements, HTTPS image, start/end, capacity, minimum age, skills, proof requirement, publication status. End follows start; capacity 1–10,000. |
 | `vf_saved` | `(user_id, opportunity_id)` | Private bookmarks with creation timestamp. One bookmark per user/opportunity. |
 | `vf_applications` | `id` UUID | Student, opportunity, message, availability, status, current decision note/actor/time. Unique student/opportunity pair prevents repeat applications, including after withdrawal. |
 | `vf_service_entries` | `id` UUID | Student, application, UTC service date, integer minutes, work notes, proof path, manual/timer source, optional interval, status, current reviewer/note/time. Composite FK `(application_id, student_id)` prevents assigning service to another student's application. |
