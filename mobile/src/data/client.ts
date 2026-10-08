@@ -3,8 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
-const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const websiteConfig = Platform.OS === 'web' && typeof window !== 'undefined'
+  ? (window as unknown as { __VOLUFORGE_CONFIG__?: { url?: string; key?: string } }).__VOLUFORGE_CONFIG__ : undefined;
+const url = (websiteConfig?.url ?? process.env.EXPO_PUBLIC_SUPABASE_URL)?.trim();
+const key = (websiteConfig?.key ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)?.trim();
+export const supabaseURL = url;
 export const isConfigured = Boolean(url && key && /^https:\/\//.test(url));
 
 // Native auth secrets are encrypted by the OS. Web sessions are limited to the

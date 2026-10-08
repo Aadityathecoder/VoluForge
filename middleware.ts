@@ -9,6 +9,9 @@ function isSupabaseConfigured() {
 }
 
 export async function middleware(request: NextRequest) {
+  // The shared Expo website authenticates directly with Supabase and its RLS policies.
+  const sharedRoutes = ["/", "/explore", "/activity", "/impact", "/profile", "/dashboard", "/service", "/opportunity", "/partners", "/community", "/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/callback", "/privacy", "/terms", "/support"]
+  if (sharedRoutes.includes(request.nextUrl.pathname) || request.nextUrl.pathname.startsWith('/voluforge/')) return NextResponse.next()
   if (!isSupabaseConfigured()) {
     return NextResponse.next()
   }

@@ -1,0 +1,15 @@
+@font-face{font-family:"DM Sans";src:url("/voluforge/DMSans.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+:root{color-scheme:light;--vf-ink:#191b16;--vf-green:#3d5736;--vf-surface:#f8f5ed;--vf-line:#dedcd2}
+html{background:var(--vf-surface);font-family:"DM Sans",sans-serif;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+::selection{background:#ddebcB;color:var(--vf-ink)}
+input,textarea{caret-color:var(--vf-green);font-family:"DM Sans",sans-serif!important}
+[role=button],[role=tab],[role=link],input,textarea{scroll-margin:20px;transition:background-color 140ms ease-out,border-color 140ms ease-out}
+[role=button]:focus-visible,[role=tab]:focus-visible,[role=link]:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--vf-green)!important;outline-offset:3px}
+[role=button]:not([aria-disabled=true]):hover,[role=tab]:hover,[role=link]:hover{filter:brightness(.96)}
+[data-testid=vf-button]:hover{filter:brightness(.92)}
+[aria-disabled=true]{cursor:not-allowed!important}
+input:hover,textarea:hover{border-color:#9b9d91!important}
+*{scrollbar-width:thin;scrollbar-color:#b6b9a9 transparent}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#b6b9a9;border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+[role=progressbar],[role=table]{font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}

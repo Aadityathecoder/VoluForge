@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1",
-    "build": "next build",
+    "build": "node scripts/website.mjs verify && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "website:export": "node scripts/website.mjs export"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

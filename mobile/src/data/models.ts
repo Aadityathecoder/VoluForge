@@ -1,3 +1,4 @@
+import type { Preferences, Outcome } from './impactEngine';
 export type Mode = 'demo' | 'live' | 'signedOut';
 export type Cause = 'Environment' | 'Food security' | 'Education' | 'Community';
 export type ApplicationStatus = 'pending' | 'accepted' | 'declined' | 'withdrawn';
@@ -19,6 +20,10 @@ export interface Opportunity {
   capacity: number;
   spotsLeft: number;
   minimumAge: number;
+  minimumExperience?: number;
+  urgency?: number;
+  outcomeMetric?: string;
+  outcomeTarget?: number;
   skills: string[];
   requirements: string[];
   proofRequired: boolean;
@@ -69,6 +74,7 @@ export interface Profile {
   skills: string[];
   causes: string[];
   goalHours: number;
+  preferences?: Preferences;
   role: 'student' | 'staff' | 'admin';
   demo?: boolean;
 }
@@ -92,9 +98,10 @@ export interface ServiceInput {
   minutes: number;
   notes: string;
   proofURL?: string;
+  outcome?: { metric: string; quantity: number; evidence: string };
 }
 
-export type ProfilePatch = Partial<Pick<Profile, 'name' | 'school' | 'bio' | 'skills' | 'causes' | 'goalHours'>>;
+export type ProfilePatch = Partial<Pick<Profile, 'name' | 'school' | 'bio' | 'skills' | 'causes' | 'goalHours' | 'preferences'>>;
 
 export interface AppState {
   mode: Mode;
@@ -112,6 +119,13 @@ export interface AppState {
   staffOrganizations: StaffOrganization[];
   reviewApplications: Application[];
   reviewEntries: ServiceEntry[];
+  outcomes: Outcome[];
+  matchingProfiles: Profile[];
+  research: { cause: string; volunteers: number; returning_volunteers: number; verified_hours: number }[];
+  impactConfigured: boolean;
+  nativeImpactConfigured: boolean;
+  recordOutcome(entryId: string, metric: string, quantity: number, evidence: string): Promise<void>;
+  reviewOutcome(id: string, decision: 'approved' | 'rejected', note?: string): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
   signUp(input: { name: string; email: string; password: string }): Promise<{ confirmationRequired: boolean }>;
   resetPassword(email: string): Promise<void>;

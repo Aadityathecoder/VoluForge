@@ -8,12 +8,13 @@ import type { Session } from '@supabase/supabase-js';
 import { isConfigured, requireClient, supabase } from './client';
 import { createDemo, demoOpportunities, type DemoSnapshot } from './demo';
 import { localDate, safeEmail, timerMinutes, validatePassword, validateService } from './domain';
+import { applicationBlocker } from './opportunities';
 import type { AppState, Application, Mode, Opportunity, Profile, ProfilePatch, ServiceEntry, ServiceInput, StaffOrganization, Timer } from './models';
 
 const DEMO_KEY = 'voluforge.demo.v1';
 const Context = createContext<AppState | undefined>(undefined);
-type Records = Pick<AppState, 'profile' | 'opportunities' | 'savedIds' | 'applications' | 'entries' | 'timer' | 'staffOrganizations' | 'reviewApplications' | 'reviewEntries'>;
-const empty = (): Records => ({ profile: null, opportunities: [], savedIds: [], applications: [], entries: [], timer: null, staffOrganizations: [], reviewApplications: [], reviewEntries: [] });
+type Records = Pick<AppState, 'profile' | 'opportunities' | 'savedIds' | 'applications' | 'entries' | 'timer' | 'staffOrganizations' | 'reviewApplications' | 'reviewEntries' | 'outcomes' | 'matchingProfiles' | 'research' | 'impactConfigured' | 'nativeImpactConfigured'>;
+const empty = (): Records => ({ profile: null, opportunities: [], savedIds: [], applications: [], entries: [], timer: null, staffOrganizations: [], reviewApplications: [], reviewEntries: [], outcomes: [], matchingProfiles: [], research: [], impactConfigured: false, nativeImpactConfigured: false });
 const newId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : 'Something went wrong. Please try again.';
 type Row = Record<string, any>;
@@ -34,7 +35,7 @@ async function allRows(table: string, options: { filter?: [string, string]; null
 }
 
 function demoRecords(snapshot: DemoSnapshot): Records {
-  return { ...empty(), ...snapshot, opportunities: demoOpportunities() };
+  return { ...empty(), ...snapshot, opportunities: demoOpportunities(), outcomes: snapshot.outcomes ?? createDemo().outcomes ?? [], impactConfigured: true, nativeImpactConfigured: true };
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
@@ -78,13 +79,23 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const loadLive = useCallback(async (session: Session) => {
     const userId = session.user.id;
-    const [profiles, organizations, memberships, opportunityRows, saved, applicationRows, entryRows, timers] = await Promise.all([
+    const [profiles, organizations, memberships, opportunityRows, saved, applicationRows, entryRows, timers, availability] = await Promise.all([
       allRows('vf_profiles'), allRows('vf_organizations'),
       allRows('vf_org_staff', { filter: ['user_id', userId], order: 'org_id' }),
       allRows('vf_opportunities'), allRows('vf_saved', { filter: ['user_id', userId], order: 'opportunity_id' }),
       allRows('vf_applications'), allRows('vf_service_entries'),
       allRows('vf_service_timers', { filter: ['student_id', userId], nullColumn: 'stopped_at' }),
+      requireClient().rpc('vf_available_spots'),
     ]);
+    const outcomeResult: {data:Row[]|null;error:any} = await allRows('vf_outcomes').then(data=>({data,error:null})).catch(error=>({data:null,error}));
+    const summaryResult = await requireClient().rpc('vf_research_summary');
+    const nativeCapability = await requireClient().rpc('vf_mobile_impact_ready');
+    if(nativeCapability.error && !['PGRST202','42883'].includes(nativeCapability.error.code)) throw nativeCapability.error;
+    const missingImpact = ['PGRST205','42P01'].includes(outcomeResult.error?.code ?? '');
+    if(outcomeResult.error && !missingImpact) throw outcomeResult.error;
+    if(summaryResult.error && !['PGRST202','42883'].includes(summaryResult.error.code)) throw summaryResult.error;
+    if (availability.error) throw availability.error;
+    const spotsById = new Map<string, number>((availability.data || []).map((row: Row) => [row.opportunity_id, row.spots_left]));
     if (!mounted.current || userRef.current !== userId || modeRef.current !== 'live') return;
     const ownProfile = profiles.find(row => row.id === userId);
     if (!ownProfile) throw new Error('Your profile is unavailable. Try again, or retry account deletion if you previously requested it.');
@@ -96,7 +107,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       id: row.id, organizationId: row.org_id, organization: orgById.get(row.org_id)?.name || 'Community organization',
       title: row.title, description: row.description, cause: row.category, location: row.location || (row.remote ? 'Remote' : ''),
       address: row.address || row.location || '', latitude: row.latitude ?? undefined, longitude: row.longitude ?? undefined,
-      startsAt: row.starts_at, endsAt: row.ends_at, capacity: row.capacity, spotsLeft: row.spots_remaining ?? -1,
+      startsAt: row.starts_at, endsAt: row.ends_at, capacity: row.capacity, spotsLeft: spotsById.get(row.id) ?? -1,
+      minimumExperience: row.min_experience ?? 0, urgency: row.urgency ?? 1, outcomeMetric: row.outcome_metric, outcomeTarget: Number(row.outcome_target ?? 0),
       minimumAge: row.min_age, skills: row.skills || [], requirements: row.requirements || [`Ages ${row.min_age}+`, ...(row.proof_required ? ['Proof of service is required'] : [])],
       proofRequired: row.proof_required, imageUrl: row.image_url || '', remote: row.remote,
       status: row.status === 'published' ? 'open' : row.status === 'closed' ? 'closed' : 'archived',
@@ -115,9 +127,14 @@ export function AppProvider({ children }: PropsWithChildren) {
       status: row.status, createdAt: row.created_at, reviewerNote: row.review_note || undefined,
       reviewedAt: row.reviewed_at || undefined, reviewerName: row.reviewer_id ? (profileById.get(row.reviewer_id)?.full_name || 'Nonprofit reviewer') : undefined,
     }));
-    const profile: Profile = { id: userId, name: ownProfile.full_name || '', email: session.user.email || '', school: ownProfile.school || '', bio: ownProfile.bio || '', skills: ownProfile.skills || [], causes: ownProfile.causes || [], goalHours: ownProfile.goal_hours, role: staffOrganizations.length ? 'staff' : 'student' };
+    const profile: Profile = { id: userId, name: ownProfile.full_name || '', email: session.user.email || '', school: ownProfile.school || '', bio: ownProfile.bio || '', skills: ownProfile.skills || [], causes: ownProfile.causes || [], goalHours: ownProfile.goal_hours, preferences: ownProfile.service_preferences, role: staffOrganizations.length ? 'staff' : 'student' };
     setRecords({
-      profile, opportunities, savedIds: saved.map(row => row.opportunity_id),
+      profile, opportunities,
+      outcomes: (outcomeResult.data ?? []).map(r=>({id:r.id,service_entry_id:r.service_entry_id,metric:r.metric,quantity:Number(r.quantity),evidence:r.evidence,status:r.status,review_note:r.review_note,reviewed_at:r.reviewed_at})),
+      research: (summaryResult.data ?? []).map((r:Row)=>({...r,volunteers:Number(r.volunteers),returning_volunteers:Number(r.returning_volunteers),verified_hours:Number(r.verified_hours)})),
+      impactConfigured: !outcomeResult.error, nativeImpactConfigured: nativeCapability.data===true,
+      matchingProfiles: profiles.map(r=>({id:r.id,name:r.full_name,email:'',school:'',bio:'',skills:r.skills??[],causes:r.causes??[],goalHours:r.goal_hours,role:'student',preferences:r.service_preferences})),
+      savedIds: saved.map(row => row.opportunity_id),
       applications: applications.filter(row => row.studentId === userId), entries: entries.filter(row => row.studentId === userId),
       timer: timers.length ? { id: timers[0].id, applicationId: timers[0].application_id, startedAt: timers[0].started_at } : null,
       staffOrganizations,
@@ -218,7 +235,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     return () => { mounted.current = false; auth?.data.subscription.unsubscribe(); linkListener.remove(); appListener.remove(); };
   }, [handleAuthURL, loadLive, setMode, setRecords]);
 
-  const redirectURL = () => Linking.createURL('auth/callback');
+  const redirectURL = () => Platform.OS === 'web' ? new URL('/auth/callback', window.location.origin).toString() : Linking.createURL('auth/callback');
   const rpc = async (name: string, args: Row) => {
     const result = await requireClient().rpc(name, args);
     if (result.error) throw result.error;
@@ -293,14 +310,15 @@ export function AppProvider({ children }: PropsWithChildren) {
   });
   const apply: AppState['apply'] = (opportunityId, statement, availability) => run(async () => {
     if (statement.trim().length < 10) throw new Error('Write a short introduction of at least 10 characters.');
-    if (!availability.trim()) throw new Error('Tell the organization when you’re available.');
+    if (availability.trim().length < 2) throw new Error('Tell the organization when you’re available.');
     if (modeRef.current === 'demo') {
       const draft = requireDemo();
-      if (draft.applications.some(row => row.opportunityId === opportunityId && row.status !== 'withdrawn')) throw new Error('You already have an application for this opportunity.');
       const opportunity = recordsRef.current.opportunities.find(row => row.id === opportunityId);
-      if (!opportunity || opportunity.status !== 'open') throw new Error('This opportunity is not accepting applications.');
+      if (!opportunity) throw new Error('This opportunity is not accepting applications.');
+      const blocked = applicationBlocker(opportunity, draft.applications.find(row => row.opportunityId === opportunityId));
+      if (blocked) throw new Error(blocked);
       const application: Application = { id: newId('demo-app'), opportunityId, studentId: draft.profile.id, studentName: draft.profile.name, statement: statement.trim(), availability: availability.trim(), status: 'pending', createdAt: new Date().toISOString(), demo: true };
-      await persistDemo({ ...draft, applications: [...draft.applications.filter(row => !(row.opportunityId === opportunityId && row.status === 'withdrawn')), application] });
+      await persistDemo({ ...draft, applications: [...draft.applications, application] });
     } else { await rpc('vf_apply_to_opportunity', { p_opportunity_id: opportunityId, p_message: statement.trim(), p_availability: availability.trim() }); await loadLive(await session()); }
   });
   const withdraw = (applicationId: string) => run(async () => {
@@ -317,12 +335,19 @@ export function AppProvider({ children }: PropsWithChildren) {
     const current = recordsRef.current;
     const application = current.applications.find(row => row.id === input.applicationId);
     validateService(input, application, current.opportunities.find(row => row.id === application?.opportunityId));
+    if(input.outcome && (!Number.isFinite(input.outcome.quantity)||input.outcome.quantity<=0||input.outcome.quantity>1e9||input.outcome.evidence.trim().length<10)) throw new Error('Add a positive outcome quantity and evidence of at least 10 characters.');
     if (modeRef.current === 'demo') {
       const draft = requireDemo();
       if (input.entryId && !draft.entries.some(e => e.id === input.entryId && e.status === 'changes_requested')) throw new Error('Only entries returned for changes can be revised.');
       const entry: ServiceEntry = { ...input, id: input.entryId || newId('demo-service'), studentId: draft.profile.id, studentName: draft.profile.name, opportunityId: application!.opportunityId, status: 'pending', notes: input.notes.trim(), createdAt: new Date().toISOString(), demo: true };
-      await persistDemo({ ...draft, entries: [entry, ...draft.entries.filter(e => e.id !== input.entryId)] });
-    } else { await rpc('vf_submit_service', { p_application_id: input.applicationId, p_service_date: input.date, p_minutes: input.minutes, p_notes: input.notes.trim(), p_proof_path: input.proofURL || null, p_entry_id: input.entryId || null }); await loadLive(await session()); }
+      await persistDemo({ ...draft, entries: [entry, ...draft.entries.filter(e => e.id !== input.entryId)], outcomes: input.outcome ? [...(draft.outcomes??[]).filter(r=>r.service_entry_id!==entry.id),{id:newId('demo-outcome'),service_entry_id:entry.id,...input.outcome,status:'pending',review_note:'',reviewed_at:null}] : draft.outcomes });
+    } else {
+      if(input.outcome && input.entryId && !recordsRef.current.nativeImpactConfigured) throw new Error('The native outcome resubmission upgrade is awaiting deployment. Submit hours, then add the outcome after the upgrade.');
+      if(input.outcome && !input.entryId && !recordsRef.current.nativeImpactConfigured) await rpc('vf_submit_impact',{p_application_id:input.applicationId,p_service_date:input.date,p_minutes:input.minutes,p_notes:input.notes.trim(),p_proof_path:input.proofURL||null,p_metric:input.outcome.metric,p_quantity:input.outcome.quantity,p_evidence:input.outcome.evidence.trim()});
+      else if(input.outcome) await rpc('vf_submit_mobile_impact',{p_application_id:input.applicationId,p_service_date:input.date,p_minutes:input.minutes,p_notes:input.notes.trim(),p_proof_path:input.proofURL||null,p_entry_id:input.entryId||null,p_metric:input.outcome.metric,p_quantity:input.outcome.quantity,p_evidence:input.outcome.evidence.trim()});
+      else await rpc('vf_submit_service', { p_application_id: input.applicationId, p_service_date: input.date, p_minutes: input.minutes, p_notes: input.notes.trim(), p_proof_path: input.proofURL || null, p_entry_id: input.entryId || null });
+      await loadLive(await session());
+    }
   });
   const startTimer = (applicationId: string) => run(async () => {
     const current = recordsRef.current;
@@ -382,7 +407,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     } else {
       const current = await session();
       const update: Row = {};
-      const keys: Record<keyof ProfilePatch, string> = { name: 'full_name', school: 'school', bio: 'bio', skills: 'skills', causes: 'causes', goalHours: 'goal_hours' };
+      const keys: Record<keyof ProfilePatch, string> = { name: 'full_name', school: 'school', bio: 'bio', skills: 'skills', causes: 'causes', goalHours: 'goal_hours', preferences: 'service_preferences' };
       for (const key of Object.keys(patch) as (keyof ProfilePatch)[]) if (patch[key] !== undefined) update[keys[key]] = patch[key];
       const { error: saveError } = await requireClient().from('vf_profiles').update(update).eq('id', current.user.id);
       if (saveError) throw saveError;
@@ -400,6 +425,19 @@ export function AppProvider({ children }: PropsWithChildren) {
     await rpc('vf_review_service', { p_entry_id: id, p_decision: decision, p_note: note.trim() });
     await loadLive(await session());
   });
+  const recordOutcome: AppState['recordOutcome'] = (entryId,metric,quantity,evidence) => run(async()=>{
+    if(!Number.isFinite(quantity)||quantity<=0||quantity>1e9||evidence.trim().length<10) throw new Error('Add a positive quantity and evidence of at least 10 characters.');
+    if(modeRef.current==='demo') {
+      const draft=requireDemo(); const entry=draft.entries.find(e=>e.id===entryId);
+      if(!entry || !['pending','approved'].includes(entry.status)) throw new Error('Choose a submitted service entry.');
+      if((draft.outcomes??[]).some(r=>r.service_entry_id===entryId&&r.metric===metric&&r.status!=='rejected')) throw new Error('This outcome has already been submitted.');
+      await persistDemo({...draft,outcomes:[...(draft.outcomes??[]).filter(r=>!(r.service_entry_id===entryId&&r.metric===metric)),{id:newId('demo-outcome'),service_entry_id:entryId,metric,quantity,evidence:evidence.trim(),status:'pending',review_note:'',reviewed_at:null}]});
+    } else {await rpc('vf_record_outcome',{p_entry_id:entryId,p_metric:metric,p_quantity:quantity,p_evidence:evidence.trim()});await loadLive(await session());}
+  });
+  const reviewOutcome: AppState['reviewOutcome'] = (id,decision,note='')=>run(async()=>{
+    if(modeRef.current!=='live') throw new Error('Outcome verification requires an authorized live partner account.');
+    await rpc('vf_review_impact',{p_outcome_id:id,p_decision:decision,p_note:note.trim()});await loadLive(await session());
+  });
   const deleteAccount = () => run(async () => {
     if (modeRef.current === 'demo') { await signOut(); return; }
     await session();
@@ -414,7 +452,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setRecords(empty());
   });
 
-  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, enterDemo, resetDemo, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
+  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, enterDemo, resetDemo, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

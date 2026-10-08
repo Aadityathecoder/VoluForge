@@ -25,9 +25,9 @@ pnpm install --frozen-lockfile
 pnpm web
 ```
 
-From the standalone source folder, omit `cd mobile`. Select **Take a look around** for the local demo. For iPhone development use `pnpm start` with a compatible Expo Go installation, or create a native development build. Native device testing is still required.
+From the standalone source folder, omit `cd mobile`. Select **Take a look around** for the local demo. For a free phone demo use `pnpm phone` with a compatible Expo Go installation. Follow [the phone demo guide](docs/FREE_PHONE_DEMO.md). Physical-device testing is still required.
 
-For live accounts copy `.env.example` to `.env.local`, fill the public Supabase settings, and follow [backend setup](supabase/README.md). No live backend, policies, signing credentials, or account keys are included. Never put a Supabase service-role key in Expo public variables. The new `vf_*` tables do not automatically import the website's existing community needs or projects.
+For live accounts copy `.env.example` to `.env.local`, fill the public Supabase settings, and follow [backend setup](supabase/README.md). The existing VoluForge Supabase Free project is now configured; local `.env.local` contains only public client settings and is ignored by Git. Signing credentials and secret keys are not included. Never put a Supabase service-role key in Expo public variables. The new `vf_*` tables do not automatically import the website's existing community needs or projects.
 
 ```sh
 pnpm typecheck
@@ -42,11 +42,11 @@ pnpm preflight
 
 - TypeScript check passed.
 - iOS JavaScript/Hermes bundle export passed; this is not a signed IPA or native compilation.
-- 13 application-domain and mocked deletion-handler tests passed.
+- 16 application-domain and mocked deletion-handler tests passed.
 - 50 PostgreSQL assertions passed in PGlite using minimal Auth/Storage schema substitutes.
-- Phone-size web preview rendered and key screens were inspected. Full browser flow QA was still in progress when this snapshot was requested.
+- Phone-size web preview rendered and key screens were inspected. A first-pass screen-flow review covered onboarding, discovery/search, application submission/withdrawal, Activity, Impact and profile; see [the weekly report](docs/WEEKLY_STATUS_2026-10-04.md).
 - Xcode is not installed on the build machine; no simulator, physical-device, TestFlight, or App Review validation has been performed.
-- Hosted Supabase Auth, email links, Storage uploads, review workflows, account deletion, and PDF sharing require staging/device validation.
+- Hosted schema, nine RLS tables, detail columns, private bucket, demo catalog, and unauthenticated API/deletion rejection were verified. Supabase Auth email links, authenticated Storage/reviewer/deletion workflows, and PDF sharing still require staging/device validation.
 - Public policy/support pages, actual nonprofit onboarding, signing, store metadata, and store screenshots remain release tasks.
 
 See [App Store release guide](docs/APP_STORE_RELEASE.md) and [asset sources](docs/ASSET_SOURCES.md). The source contains no App Store deployment or GitHub workflow that publishes automatically.
