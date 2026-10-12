@@ -1,5 +1,7 @@
 # VoluForge Fall 2026 Project Plan
 
+Current implementation status and October 12–18 sprint: [dated progress tracker](progress-tracker.md). The plan below preserves original estimates; dated tracker updates supersede old target/status assumptions.
+
 ## Delivery strategy
 
 Build one vertical slice in dependency order. Every task ends in a verifiable artifact: a migration that can be queried, a protected route with an authorization test, or a browser flow with persisted results. Feature work ends November 29 so the remaining time can be used for a reliable live demo.

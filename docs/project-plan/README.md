@@ -2,6 +2,8 @@
 
 This folder is the planning source of truth for completing and demonstrating the VoluForge MVP during Fall 2026.
 
+Latest weekly report: [October 11 check-in](../check-ins/2026-10-11.md) · [live API/SQL evidence](../evidence/week-3/README.md). GitHub Issues T01–T16 were updated on October 11; T01 and T03 are closed with evidence, and remaining acceptance work is kept open.
+
 ## Planning files
 
 - [availability.md](availability.md) — calendar, weekly capacity, reduced-efficiency periods, sick-day allowance, and assumptions

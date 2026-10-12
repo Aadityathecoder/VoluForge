@@ -1,57 +1,46 @@
-# Progress and Velocity Tracker
+# Progress and semester tracker — updated October 11, 2026
 
-## Status definitions
+Primary tracker: [GitHub Issues](https://github.com/Aadityathecoder/VoluForge/issues). Dates below are the existing provisional semester plan, ending December 11. “Implemented prototype” means code exists; it does not mean hosted acceptance or release is complete.
 
-- **Backlog:** understood but not scheduled for immediate work
-- **Ready:** dependencies satisfied and definition of done is testable
-- **In progress:** actively being changed; limit to one development task at a time
-- **Blocked:** cannot proceed; record blocker and next action
-- **Done:** definition of done verified and code/documentation committed
-
-## Milestone dashboard
-
-| Milestone | Target | Status | Completion evidence |
+| ID / issue | Status | Remaining work / completion evidence | Target |
 | --- | --- | --- | --- |
-| M1 — Foundation and access | Oct 11 | Not started | — |
-| M2 — Opportunity-to-acceptance | Nov 1 | Not started | — |
-| M3 — Verified service loop | Nov 22 | Not started | — |
-| M4 — Stable live demo | Dec 10 | Not started | — |
+| [T01](https://github.com/Aadityathecoder/VoluForge/issues/1) Audit | Done | [Inventory and core route map](prototype-inventory.md) recorded. Legacy experiments identified separately. | Oct 11 |
+| [T02](https://github.com/Aadityathecoder/VoluForge/issues/2) Platforms | In progress | Local production build and hosted API connectivity pass; preview/production deployment still needed. | Oct 18 |
+| [T03](https://github.com/Aadityathecoder/VoluForge/issues/3) Schema | Done | Clean migration and 50 regression checks plus opportunity details pass. Hosted signup migration applied; live API rows verified. Mobile impact upgrade remains separate. | Oct 11 |
+| [T04](https://github.com/Aadityathecoder/VoluForge/issues/4) Auth/RLS | In progress | Both API roles/signup/login/logout and forbidden requests verified. Finish browser role redirects and real confirmation/recovery email checks. | Oct 18 |
+| [T05](https://github.com/Aadityathecoder/VoluForge/issues/5) Organization verification | In progress | Pending signup/SQL operator verification works; audited browser/operator approve/reject workflow remains. | Oct 18 |
+| [T06](https://github.com/Aadityathecoder/VoluForge/issues/6) Publishing | In progress | Create API passes hosted HTTP+SQL. Test shared browser create/edit/publish/close and foreign-org editing. | Oct 22 |
+| [T07](https://github.com/Aadityathecoder/VoluForge/issues/7) Discovery | In progress | API lists persisted verified/published opportunities. Finish browser filter/detail and empty/error acceptance. | Oct 25 |
+| [T08](https://github.com/Aadityathecoder/VoluForge/issues/8) Applications | In progress | Apply, duplicates and owner review pass hosted API+SQL. Verify browser accept/decline and service eligibility. | Nov 1 |
+| [T09](https://github.com/Aadityathecoder/VoluForge/issues/9) Service submission | Implemented prototype | Complete hosted browser manual entry/proof validation; timer optional. | Nov 8 |
+| [T10](https://github.com/Aadityathecoder/VoluForge/issues/10) Service verification | Implemented prototype | Test reviewer queue, ownership, resubmission, decisions and audit against hosted data. | Nov 15 |
+| [T11](https://github.com/Aadityathecoder/VoluForge/issues/11) Hours dashboard | Implemented prototype | Match UI totals to approved-only SQL; test returned/rejected exclusion. | Nov 18 |
+| [T12](https://github.com/Aadityathecoder/VoluForge/issues/12) Export | Implemented prototype | Validate date-range record/print output against signed-in student's approved SQL rows. | Nov 22 |
+| [T13](https://github.com/Aadityathecoder/VoluForge/issues/13) Integration/freeze | In progress | API slice tested; full seeded browser loop twice, accessibility/responsive review and critical-defect triage remain. | Nov 29 |
+| [T14](https://github.com/Aadityathecoder/VoluForge/issues/14) Production | Not started | Deployment, environment/domain/log checks and rollback tag. | Dec 3 |
+| [T15](https://github.com/Aadityathecoder/VoluForge/issues/15) Demo assets | In progress | Week 3 screenshots and API script ready; complete full-loop reset, backup video, teacher access and seven-minute demo. | Dec 7 |
+| [T16](https://github.com/Aadityathecoder/VoluForge/issues/16) Final rehearsal | Not started | Two final rehearsals, release freeze and final submission. | Dec 10 |
 
-## Weekly velocity log
+## Milestones
 
-Update every Sunday. Count a task only when its definition of done passes.
+| Milestone | Target | Status |
+| --- | --- | --- |
+| M1 Foundation/access | Oct 11 | API/schema verified; browser/admin/email and deployment acceptance pending |
+| M2 Opportunity-to-acceptance | Nov 1 | Create/list/apply/review API verified; browser/decision acceptance pending |
+| M3 Verified service loop | Nov 22 | Prototype/SQL present; hosted end-to-end acceptance pending |
+| M4 Stable live demo | Dec 10 | Week 3 API evidence ready; full release/demo pending |
 
-| Week ending | Available hours | Actual hours | Estimated hours completed | Velocity | Tasks completed | Blockers/notes | Next adjustment |
-| --- | ---: | ---: | ---: | ---: | --- | --- | --- |
-| Oct 4 | 6 | — | — | — | — | — | — |
-| Oct 11 | 7 | — | — | — | — | — | — |
-| Oct 18 | 5 | — | — | — | — | — | — |
-| Oct 25 | 6 | — | — | — | — | — | — |
-| Nov 1 | 6 | — | — | — | — | — | — |
-| Nov 8 | 6 | — | — | — | — | — | — |
-| Nov 15 | 6 | — | — | — | — | — | — |
-| Nov 22 | 6 | — | — | — | — | — | — |
-| Nov 29 | 2–4 | — | — | — | — | — | — |
-| Dec 6 | 6 | — | — | — | — | — | — |
-| Dec 10 | 4 | — | — | — | — | — | — |
+## New sprint: October 12–18
 
-Velocity formula: `estimated hours completed / actual focused hours`.
+| New task | Budget | Definition of done |
+| --- | ---: | --- |
+| T05 operator approval/rejection | 2h | Only authorized operator can change verification; durable audit; pending org publishing stays denied |
+| T04 browser Auth | 1h | Both roles reach allowed areas; real confirmation/recovery emails and logout tested |
+| T06–T08 browser acceptance | 1.5h | Publish, discover, apply, accept/decline match hosted rows across two roles |
+| Weekly evidence and demo | 0.5h | Issues/status updated; API demo rehearsed with credentials private |
 
-## Weekly review checklist
+Capacity remains 5h next week per [availability](availability.md). No actual focused hours were supplied, so actual hours and velocity are **not recorded or invented**. Preserve the November 29 feature cutoff and November 30–December 10 stabilization period. Each following week completes the remaining work in the dated table; conditional timers/uploads/polish yield to the core service loop.
 
-- Demonstrate the newest completed slice using persisted data
-- Run build/type checks and the relevant authorization cases
-- Close only tasks whose definition of done passed
-- Record actual focused hours and velocity
-- Re-estimate remaining work using the latest three-week average
-- Identify the single biggest blocker and its next action
-- Confirm the next week's work fits its hour cap
-- Remove optional scope if projected work exceeds capacity by more than 10%
+## Week ending October 11
 
-## Decision log
-
-| Date | Decision | Reason | Plan impact |
-| --- | --- | --- | --- |
-| Sep 21 | Use a thin end-to-end vertical slice | Full production depth exceeds semester capacity | Advanced edge cases become post-MVP |
-| Sep 21 | Stop feature development Nov 29 | Protect deployment and live-demo time | Final period is stabilization only |
-| Sep 21 | Use GitHub Issues as tracker | Keeps tasks, evidence, and code together | Each task maps to T01–T16 |
+Assigned API slice: complete and [evidenced](../evidence/week-3/README.md). The live test used a local Next.js HTTP server and hosted Supabase Auth/database. Direct SQL was run through the existing logged-in SQL Editor. No Expo server was needed. [One-screen check-in](../check-ins/2026-10-11.md).

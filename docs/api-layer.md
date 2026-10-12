@@ -17,7 +17,7 @@ Lists accept `limit=1..100` and `offset=0..10000`; defaults are 50 and 0. Contin
 
 Signup JSON: `email`, `password` (8–128 characters), `fullName`, `accountType` (`volunteer` or `nonprofit`). Nonprofits also supply `organizationName`. Login JSON: `email`, `password`. The legacy `/api/auth/signup` delegates to this flow with `role: student|partner` and `schoolOrOrg` aliases. Signup cannot assign an admin role.
 
-Nonprofit signup atomically creates an unverified organization and owner membership through migration `202610070001_api_nonprofit_signup.sql`. An administrator must verify the organization before staff can create opportunities, matching existing website rules. Metadata cannot grant verification. The new migration has been tested locally but **has not been applied to hosted Supabase**. Run it once after the existing `vf_*` migrations. The previously pending mobile impact migration is unrelated and not required for this API.
+Nonprofit signup atomically creates an unverified organization and owner membership through migration `202610070001_api_nonprofit_signup.sql`. An administrator must verify the organization before staff can create opportunities, matching existing website rules. Metadata cannot grant verification. The new migration was applied to the configured hosted Supabase project on October 11, 2026, and volunteer/nonprofit signup was verified with live HTTP requests and direct SQL queries. On another project, run it once after the existing `vf_*` migrations. The previously pending mobile impact migration is unrelated and not required for this API.
 
 Opportunity JSON: `org_id`, `title`, `description`, `starts_at`, `ends_at` (ISO timestamps), `capacity`, optional `status: draft|published|closed` (default draft). Use published for volunteer discovery. Optional fields: category, location, remote, image_url, min_age, skills, proof_required, address, latitude, longitude, requirements. Apply JSON: `message` (10–3000 characters), `availability` (2–1000).
 
@@ -52,10 +52,16 @@ python3 -m venv .venv
 
 Set API_TEST_DATABASE=true only for a dedicated test project; the runner otherwise stops before writes. Apply the new signup migration there first. The runner verifies account/profile/membership rows before and after signup, login sessions, opportunity and audit rows, volunteer HTTP discovery, application rows, duplicate and unauthorized rejection, nonprofit HTTP review, and session removal plus HTTP denial after logout. It removes its exact temporary records in a finally block. It confirms generated example.com accounts through SQL; real email delivery is a separate test. It does not apply hosted migrations or alter existing organizations.
 
-## Results from this task
+## Verification — October 11, 2026
 
-- TypeScript check and production website build passed.
-- Existing direct database regression suite: 50 workflow/security assertions plus opportunity detail checks passed.
-- New sequential direct database workflow tests passed.
-- Local HTTP checks passed: each implemented endpoint returns 503 without Supabase configuration; unknown endpoint 404, wrong method 405, cross-origin mutation 403.
-- Successful live Supabase signup/login/logout and HTTP-to-database workflows remain **unverified**: no credentials were supplied. No hosted migration or production deployment occurred.
+All assigned flows passed against a local Next.js HTTP server connected to the existing **hosted Supabase database**: volunteer/nonprofit signup, login, logout; nonprofit opportunity creation; volunteer discovery and application; nonprofit application review. Independent SQL Editor queries verified the before/after rows. See [Week 3 evidence](evidence/week-3/README.md) for captured screenshots, sanitized HTTP results, and the exact SQL.
+
+The test fixture accounts have fictional example.com addresses. Only those two accounts were confirmed through SQL for the classroom test; email delivery itself was not tested. Only the synthetic nonprofit was operator-verified. Its listing was closed and its verification removed after the test. No real account or organization was changed.
+
+TypeScript/production build, 50 existing SQL workflow/security checks plus opportunity details, and the sequential API database workflow suite passed. HTTP checks also cover invalid credentials, unauthenticated access, unverified/foreign publishing, self-application, duplicate applications, unauthorized review, input validation, route/method errors, and cross-origin mutations.
+
+For a repeatable automated HTTP+SQL run on a dedicated test database, use `tests/api-live/run.py` with privately loaded DATABASE_URL. This session used the logged-in SQL Editor for independent hosted SQL verification because no direct database connection string was available. `tests/api-live/controlled-demo.py` records the phased HTTP flow without printing passwords or tokens. Run signup → confirm the synthetic emails through SQL → login → operator-verify only the synthetic organization → publish → apply → boundaries → logout, running the corresponding `verify.sql` query between each phase.
+
+The first self-application assertion expected HTTP 409; the actual permission response was 403. The expected status was corrected and the permission check then passed. No application row was created for staff.
+
+Production website deployment, real email-delivery testing, and the semester service/verification/export acceptance run remain separate work. This weekly delivery proves the assigned API slice, not a completed production MVP. Token expiry after logout follows [Supabase signout behavior](https://supabase.com/docs/guides/auth/signout); refresh tokens were independently confirmed revoked.

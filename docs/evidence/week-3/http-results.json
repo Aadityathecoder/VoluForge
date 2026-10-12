@@ -1,0 +1,230 @@
+{
+  "base": "http://127.0.0.1:3157/api/v1/",
+  "database": "Hosted Supabase; independent SQL editor checks recorded separately",
+  "checks": [
+    {
+      "method": "POST",
+      "path": "auth/signup",
+      "actor": "anonymous",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/signup",
+      "actor": "anonymous",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/login",
+      "actor": "anonymous",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "auth/me",
+      "actor": "volunteer",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/login",
+      "actor": "anonymous",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "auth/me",
+      "actor": "nonprofit",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/login",
+      "actor": "anonymous",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "opportunities",
+      "actor": "anonymous",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities",
+      "actor": "nonprofit",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities",
+      "actor": "volunteer",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities",
+      "actor": "nonprofit",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "opportunities?limit=100",
+      "actor": "volunteer",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "opportunities?limit=0",
+      "actor": "volunteer",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities",
+      "actor": "nonprofit",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "unknown",
+      "actor": "anonymous",
+      "status": 404,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "auth/signup",
+      "actor": "anonymous",
+      "status": 405,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/login",
+      "actor": "anonymous",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/signup",
+      "actor": "anonymous",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/signup",
+      "actor": "anonymous",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "opportunities?offset=-1",
+      "actor": "volunteer",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities/0cd94cc5-708e-4129-8c11-24cca218fd20/applications",
+      "actor": "volunteer",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities/0cd94cc5-708e-4129-8c11-24cca218fd20/applications",
+      "actor": "volunteer",
+      "status": 409,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities/0cd94cc5-708e-4129-8c11-24cca218fd20/applications",
+      "actor": "volunteer",
+      "status": 409,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "opportunities/0cd94cc5-708e-4129-8c11-24cca218fd20/applications",
+      "actor": "nonprofit",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "applications?opportunity_id=0cd94cc5-708e-4129-8c11-24cca218fd20",
+      "actor": "volunteer",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "applications?opportunity_id=0cd94cc5-708e-4129-8c11-24cca218fd20",
+      "actor": "nonprofit",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/logout",
+      "actor": "volunteer",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "Supabase Auth refresh",
+      "actor": "volunteer",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "auth/me",
+      "actor": "anonymous",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "auth/logout",
+      "actor": "nonprofit",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "Supabase Auth refresh",
+      "actor": "nonprofit",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "auth/me",
+      "actor": "anonymous",
+      "status": 401,
+      "passed": true
+    }
+  ]
+}

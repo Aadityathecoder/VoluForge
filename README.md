@@ -1,5 +1,7 @@
 # VoluForge
 
+[Week 3 check-in — October 11](docs/check-ins/2026-10-11.md) · [Live API/SQL evidence](docs/evidence/week-3/README.md) · [Semester tracker](docs/project-plan/progress-tracker.md)
+
 **Turn your skills into measurable impact.**
 
 VoluForge is a responsive web platform being built to connect high-school students with nonprofit organizations. Students will be able to find skills-aligned service opportunities, apply, document completed work, and receive a verified service record. Nonprofits will be able to recruit students for real needs and verify the time and work they complete.
