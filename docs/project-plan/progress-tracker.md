@@ -1,4 +1,4 @@
-# Progress and semester tracker — updated October 11, 2026
+# Progress and semester tracker — updated October 14, 2026
 
 Primary tracker: [GitHub Issues](https://github.com/Aadityathecoder/VoluForge/issues). Dates below are the existing provisional semester plan, ending December 11. “Implemented prototype” means code exists; it does not mean hosted acceptance or release is complete.
 
@@ -8,7 +8,7 @@ Primary tracker: [GitHub Issues](https://github.com/Aadityathecoder/VoluForge/is
 | [T02](https://github.com/Aadityathecoder/VoluForge/issues/2) Platforms | In progress | Local production build and hosted API connectivity pass; preview/production deployment still needed. | Oct 18 |
 | [T03](https://github.com/Aadityathecoder/VoluForge/issues/3) Schema | Done | Clean migration and 50 regression checks plus opportunity details pass. Hosted signup migration applied; live API rows verified. Mobile impact upgrade remains separate. | Oct 11 |
 | [T04](https://github.com/Aadityathecoder/VoluForge/issues/4) Auth/RLS | In progress | Both API roles/signup/login/logout and forbidden requests verified. Finish browser role redirects and real confirmation/recovery email checks. | Oct 18 |
-| [T05](https://github.com/Aadityathecoder/VoluForge/issues/5) Organization verification | In progress | Pending signup/SQL operator verification works; audited browser/operator approve/reject workflow remains. | Oct 18 |
+| [T05](https://github.com/Aadityathecoder/VoluForge/issues/5) Organization verification | In progress | Private allowlist, audited approve/reject RPC and operator CLI implemented; 23 local checks pass. Hosted deployment, operator enrollment and browser queue/acceptance remain. | Oct 18 |
 | [T06](https://github.com/Aadityathecoder/VoluForge/issues/6) Publishing | In progress | Create API passes hosted HTTP+SQL. Test shared browser create/edit/publish/close and foreign-org editing. | Oct 22 |
 | [T07](https://github.com/Aadityathecoder/VoluForge/issues/7) Discovery | In progress | API lists persisted verified/published opportunities. Finish browser filter/detail and empty/error acceptance. | Oct 25 |
 | [T08](https://github.com/Aadityathecoder/VoluForge/issues/8) Applications | In progress | Apply, duplicates and owner review pass hosted API+SQL. Verify browser accept/decline and service eligibility. | Nov 1 |
@@ -44,3 +44,7 @@ Capacity remains 5h next week per [availability](availability.md). No actual foc
 ## Week ending October 11
 
 Assigned API slice: complete and [evidenced](../evidence/week-3/README.md). The live test used a local Next.js HTTP server and hosted Supabase Auth/database. Direct SQL was run through the existing logged-in SQL Editor. No Expo server was needed. [One-screen check-in](../check-ins/2026-10-11.md).
+
+## Week 4 mid-week — October 14
+
+T05 locally implemented and verified: authenticated allowlist, atomic decisions, actor/prior-state history, publishing/discovery revocation and self-review protection. [Check-in](../check-ins/2026-10-14.md) / [local evidence](../evidence/week-4/README.md). All 23 new operator checks and the existing 50-check regression plus opportunity details pass. T05 remains **in progress** until hosted deployment and acceptance; T04 and T06–T08 acceptance work remains open. No actual focused hours were supplied or invented.

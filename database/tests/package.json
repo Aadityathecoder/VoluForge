@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node validate.mjs",
-    "demo": "node demo.mjs"
+    "demo": "node demo.mjs",
+    "test:operators": "node operator-verification.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8"

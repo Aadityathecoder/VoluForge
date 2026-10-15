@@ -1,0 +1,24 @@
+PASS: anonymous review denied
+PASS: nonprofit owner cannot approve themselves
+PASS: operator self-enrollment denied
+PASS: direct client verification denied
+PASS: pending organization publishing denied
+PASS: mismatched reason denied
+PASS: null decision denied
+PASS: null reason denied
+PASS: unknown organization denied
+PASS: operator approval returns decision id
+PASS: approval persisted independently
+PASS: private decision records actor and prior state
+PASS: matching audit event persisted
+PASS: approved organization can publish
+PASS: approved listing visible to volunteer
+PASS: client cannot delete decision history
+PASS: client cannot rewrite decision history
+PASS: rejected organization listing hidden
+PASS: rejected organization publishing denied
+PASS: revocation retains approval and previous state
+PASS: operator own organization conflict denied
+PASS: revoked operator cannot review
+PASS: failed reviews leave no decision records
+PASS: 23 operator verification security/workflow checks (isolated local PostgreSQL)

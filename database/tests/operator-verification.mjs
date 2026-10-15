@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import { PGlite } from '@electric-sql/pglite';
+import { initializeLocalDatabase } from './local-db.mjs';
+const db = new PGlite();
+const operator = '11111111-0000-0000-0000-000000000001';
+const owner = '11111111-0000-0000-0000-000000000002';
+const student = '11111111-0000-0000-0000-000000000003';
+const org = 'aaaaaaaa-0000-0000-0000-000000000001';
+let checks = 0;
+const check = (condition, label) => { assert.ok(condition, label); checks++; console.log(`PASS: ${label}`); };
+async function denied(sql, params, code, label) {
+  await assert.rejects(db.query(sql, params), error => error.code === code, label);
+  checks++; console.log(`PASS: ${label}`);
+}
+async function asUser(user, role = 'authenticated') {
+  await db.exec('reset role');
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [user]);
+  await db.exec(`set role ${role}`);
+}
+const review = 'select public.vf_review_organization($1,$2,$3) as id';
+try {
+  await initializeLocalDatabase(db);
+  await db.query('insert into auth.users(id,raw_user_meta_data) values ($1,\'{}\'),($2,\'{}\'),($3,\'{}\')', [operator, owner, student]);
+  await db.query('insert into public.vf_organizations(id,name) values($1,\'Test Community Organization\')', [org]);
+  await db.query('insert into public.vf_org_staff(org_id,user_id,role) values($1,$2,\'owner\')', [org,owner]);
+  await db.query('insert into vf_private.operators(user_id) values($1)', [operator]);
+  const event = {org_id:org,title:'Pantry volunteer shift',description:'Pack pantry supplies for community members.',starts_at:'2026-11-01T10:00:00Z',ends_at:'2026-11-01T12:00:00Z',capacity:5,status:'published'};
+  await asUser('', 'anon');
+  await denied(review,[org,'approved','identity_confirmed'],'42501','anonymous review denied');
+  await asUser(owner);
+  await denied(review,[org,'approved','identity_confirmed'],'42501','nonprofit owner cannot approve themselves');
+  await denied('insert into vf_private.operators(user_id) values($1)',[owner],'42501','operator self-enrollment denied');
+  await denied('update public.vf_organizations set verified=true where id=$1',[org],'42501','direct client verification denied');
+  await denied('select public.vf_upsert_opportunity($1::jsonb)',[JSON.stringify(event)],'42501','pending organization publishing denied');
+  await asUser(operator);
+  await denied(review,[org,'approved','ineligible'],'22023','mismatched reason denied');
+  await denied(review,[org,null,'identity_confirmed'],'22023','null decision denied');
+  await denied(review,[org,'approved',null],'22023','null reason denied');
+  await denied(review,['bbbbbbbb-0000-0000-0000-000000000001','approved','identity_confirmed'],'P0002','unknown organization denied');
+  const approved = (await db.query(review,[org,'approved','identity_confirmed'])).rows[0].id;
+  check(Boolean(approved),'operator approval returns decision id');
+  await db.exec('reset role');
+  check((await db.query('select verified from public.vf_organizations where id=$1',[org])).rows[0].verified,'approval persisted independently');
+  const history = (await db.query('select * from vf_private.organization_decisions where id=$1',[approved])).rows[0];
+  check(history.actor_id===operator && history.previous_verified===false && history.decision==='approved','private decision records actor and prior state');
+  check((await db.query("select count(*)::int as n from public.vf_audit where entity_id=$1 and action='organization.reviewed'",[approved])).rows[0].n===1,'matching audit event persisted');
+  await asUser(owner);
+  await db.query('select public.vf_upsert_opportunity($1::jsonb)',[JSON.stringify(event)]);
+  checks++; console.log('PASS: approved organization can publish');
+  await asUser(student);
+  check((await db.query('select count(*)::int as n from public.vf_opportunities where org_id=$1',[org])).rows[0].n===1,'approved listing visible to volunteer');
+  await asUser(operator);
+  await denied('delete from vf_private.organization_decisions where id=$1',[approved],'42501','client cannot delete decision history');
+  await denied('update vf_private.organization_decisions set decision=\'rejected\' where id=$1',[approved],'42501','client cannot rewrite decision history');
+  await db.query(review,[org,'rejected','verification_revoked']);
+  await asUser(student);
+  check((await db.query('select count(*)::int as n from public.vf_opportunities where org_id=$1',[org])).rows[0].n===0,'rejected organization listing hidden');
+  await asUser(owner);
+  await denied('select public.vf_upsert_opportunity($1::jsonb)',[JSON.stringify(event)],'42501','rejected organization publishing denied');
+  await db.exec('reset role');
+  const decisions = (await db.query('select decision,previous_verified from vf_private.organization_decisions where org_id=$1 order by created_at',[org])).rows;
+  check(decisions.length===2 && decisions[1].previous_verified===true,'revocation retains approval and previous state');
+  await db.query('insert into public.vf_org_staff(org_id,user_id) values($1,$2)',[org,operator]);
+  await asUser(operator);
+  await denied(review,[org,'approved','identity_confirmed'],'42501','operator own organization conflict denied');
+  await db.exec('reset role');
+  await db.query('delete from public.vf_org_staff where user_id=$1',[operator]);
+  await db.query('update vf_private.operators set active=false where user_id=$1',[operator]);
+  await asUser(operator);
+  await denied(review,[org,'approved','identity_confirmed'],'42501','revoked operator cannot review');
+  await db.exec('reset role');
+  check((await db.query('select count(*)::int as n from vf_private.organization_decisions')).rows[0].n===2,'failed reviews leave no decision records');
+  console.log(`PASS: ${checks} operator verification security/workflow checks (isolated local PostgreSQL)`);
+} finally { await db.close(); }

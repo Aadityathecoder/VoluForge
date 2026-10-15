@@ -1,0 +1,1 @@
+PASS: baseline parity, ten RLS tables, and 50 workflow/security checks plus opportunity detail checks
