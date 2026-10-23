@@ -65,6 +65,12 @@ export function Navbar() {
 
           <div className="hidden md:flex items-center gap-8">
             <Link
+              href="/opportunities"
+              className="theme-soft-text text-sm transition-colors hover:text-sky-500"
+            >
+              Opportunities
+            </Link>
+            <Link
               href="/explore"
               className="theme-soft-text text-sm transition-colors hover:text-sky-500"
             >
@@ -119,6 +125,13 @@ export function Navbar() {
         {isOpen && (
           <div className="glass-panel mx-0 mb-4 border-white/10 py-4 md:hidden">
             <div className="flex flex-col gap-1 px-2">
+              <Link
+                href="/opportunities"
+                className="theme-soft-text block rounded-lg px-4 py-2.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                onClick={() => setIsOpen(false)}
+              >
+                Opportunities
+              </Link>
               <Link
                 href="/explore"
                 className="theme-soft-text block rounded-lg px-4 py-2.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10"
