@@ -20,10 +20,10 @@ private enum MainTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var symbol: String {
         switch self {
-        case .home: "house"
-        case .fellowship: "person.3"
-        case .discover: "safari"
-        case .profile: "person.crop.circle"
+        case .home: return "house"
+        case .fellowship: return "person.3"
+        case .discover: return "safari"
+        case .profile: return "person.crop.circle"
         }
     }
 }
