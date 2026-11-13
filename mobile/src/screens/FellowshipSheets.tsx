@@ -128,7 +128,7 @@ export function Roster({ id }: { id: string }) {
   </View>;
 }
 
-/** People who signed in with Google pick their account type once. */
+/** Accounts without a type (for example, created with Google on the website) pick one once. */
 export function ChooseType() {
   const app = useApp(), nav = useNav(), task = useBusy();
   const [type, setType] = useState<AccountType>('student'), [org, setOrg] = useState('');

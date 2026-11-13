@@ -28,8 +28,6 @@ function AuthForm({initialMode='signin'}:{initialMode?:'signin'|'signup'|'reset'
  return <View style={box}>
   <Title>{title}</Title><Txt style={s.body}>{sub}</Txt>
   {mode==='signup'&&<View style={{flexDirection:'row',gap:10}}>{([['student','Student','Join and volunteer'],['admin','Administrator','Run fellowships']] as const).map(([value,label,body])=><Pressable key={value} accessibilityRole="radio" accessibilityState={{checked:role===value}} onPress={()=>setRole(value)} style={{flex:1,padding:14,borderRadius:14,borderWidth:role===value?2:1,borderColor:role===value?C.ink:C.line,backgroundColor:C.white,gap:3}}><Txt style={{fontWeight:'700'}}>{label}</Txt><Txt style={{fontSize:12,color:C.muted}}>{body}</Txt></Pressable>)}</View>}
-  {mode!=='reset'&&<><Button title={mode==='signup'?'Sign up with Google':'Continue with Google'} icon="logo-google" iconFirst variant="outline" busy={task.busy} onPress={()=>task.run(async()=>{await app.signInWithGoogle();},undefined,true)}/>
-  <View style={[s.row,{gap:10}]}><View style={{flex:1,height:1,backgroundColor:C.line}}/><Txt style={{fontSize:12,color:C.muted}}>or with email</Txt><View style={{flex:1,height:1,backgroundColor:C.line}}/></View></>}
   {mode==='signup'&&<Field label="Full name" value={name} onChangeText={setName} autoComplete="name"/>}
   {mode==='signup'&&role==='admin'&&<Field label="School or organization" value={org} onChangeText={setOrg} maxLength={200}/>}
   <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@example.com"/>
