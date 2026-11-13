@@ -1,65 +1,36 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-function isSupabaseConfigured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  )
-}
+const signedInOnly = ['/home', '/opportunities', '/fellowships', '/activity', '/profile', '/admin', '/onboarding']
 
 export async function middleware(request: NextRequest) {
-  // The shared Expo website authenticates directly with Supabase and its RLS policies.
-  const sharedRoutes = ["/", "/explore", "/activity", "/impact", "/profile", "/dashboard", "/service", "/opportunity", "/partners", "/community", "/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/callback", "/privacy", "/terms", "/support"]
-  if (sharedRoutes.includes(request.nextUrl.pathname) || request.nextUrl.pathname.startsWith('/voluforge/')) return NextResponse.next()
-  if (request.nextUrl.pathname.startsWith('/api/v1/') || !isSupabaseConfigured()) {
-    return NextResponse.next()
-  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key || request.nextUrl.pathname.startsWith('/api/')) return NextResponse.next()
 
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          )
-        },
+  let response = NextResponse.next({ request })
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll(list: { name: string; value: string; options: CookieOptions }[]) {
+        list.forEach(({ name, value }) => request.cookies.set(name, value))
+        response = NextResponse.next({ request })
+        list.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
       },
     },
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  })
+  const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const guestMode = request.cookies.get('voluforge-guest')?.value === '1'
-  const protectedPrefix =
-    path.startsWith('/dashboard') ||
-    path.startsWith('/project-kits') ||
-    path.startsWith('/submit-need')
-
-  if (!user && !guestMode && protectedPrefix) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    url.searchParams.set('next', `${path}${request.nextUrl.search}`)
-    return NextResponse.redirect(url)
+  if (!user && signedInOnly.some(p => path === p || path.startsWith(p + '/'))) {
+    const login = request.nextUrl.clone()
+    login.pathname = '/login'
+    login.search = ''
+    login.searchParams.set('next', path + request.nextUrl.search)
+    return NextResponse.redirect(login)
   }
-
-  return supabaseResponse
+  return response
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)'],
 }

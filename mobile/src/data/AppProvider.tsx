@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { AppState as NativeAppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { File } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import type { Session } from '@supabase/supabase-js';
@@ -9,12 +10,13 @@ import { isConfigured, requireClient, supabase } from './client';
 import { createDemo, demoOpportunities, type DemoSnapshot } from './demo';
 import { localDate, safeEmail, timerMinutes, validatePassword, validateService } from './domain';
 import { applicationBlocker } from './opportunities';
-import type { AppState, Application, Mode, Opportunity, Profile, ProfilePatch, ServiceEntry, ServiceInput, StaffOrganization, Timer } from './models';
+import type { Account, AccountType, AppState, Application, Fellowship, FellowshipInput, RosterEntry, Mode, Opportunity, Profile, ProfilePatch, ServiceEntry, ServiceInput, StaffOrganization, Timer } from './models';
 
 const DEMO_KEY = 'voluforge.demo.v1';
 const Context = createContext<AppState | undefined>(undefined);
-type Records = Pick<AppState, 'profile' | 'opportunities' | 'savedIds' | 'applications' | 'entries' | 'timer' | 'staffOrganizations' | 'reviewApplications' | 'reviewEntries' | 'outcomes' | 'matchingProfiles' | 'research' | 'impactConfigured' | 'nativeImpactConfigured'>;
-const empty = (): Records => ({ profile: null, opportunities: [], savedIds: [], applications: [], entries: [], timer: null, staffOrganizations: [], reviewApplications: [], reviewEntries: [], outcomes: [], matchingProfiles: [], research: [], impactConfigured: false, nativeImpactConfigured: false });
+type Records = Pick<AppState, 'account' | 'fellowships' | 'fellowshipsReady' | 'profile' | 'opportunities' | 'savedIds' | 'applications' | 'entries' | 'timer' | 'staffOrganizations' | 'reviewApplications' | 'reviewEntries' | 'outcomes' | 'matchingProfiles' | 'research' | 'impactConfigured' | 'nativeImpactConfigured'>;
+const noAccount: Account = { type: null, organization: '', verified: false };
+const empty = (): Records => ({ account: noAccount, fellowships: [], fellowshipsReady: false, profile: null, opportunities: [], savedIds: [], applications: [], entries: [], timer: null, staffOrganizations: [], reviewApplications: [], reviewEntries: [], outcomes: [], matchingProfiles: [], research: [], impactConfigured: false, nativeImpactConfigured: false });
 const newId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : 'Something went wrong. Please try again.';
 type Row = Record<string, any>;
@@ -34,8 +36,16 @@ async function allRows(table: string, options: { filter?: [string, string]; null
   throw new Error('Your records exceed the current download limit. Please contact support.');
 }
 
+const missingRpc = (e: { code?: string } | null) => !!e && ['PGRST202', '42883', 'PGRST205'].includes(e.code ?? '');
+const toFellowship = (r: Row): Fellowship => ({
+  id: r.id, title: r.title, summary: r.summary ?? '', description: r.description ?? '', focus: r.focus ?? 'Community', location: r.location ?? '', remote: !!r.remote,
+  startsOn: r.starts_on, endsOn: r.ends_on, applyBy: r.apply_by ?? null, capacity: r.capacity, weeklyHours: r.weekly_hours, status: r.status,
+  host: r.host ?? '', hostVerified: !!r.host_verified, seatsLeft: r.seats_left ?? Math.max(r.capacity - (r.accepted ?? 0), 0), myStatus: r.my_status ?? null,
+  joinCode: r.join_code, pending: r.pending, accepted: r.accepted,
+});
+
 function demoRecords(snapshot: DemoSnapshot): Records {
-  return { ...empty(), ...snapshot, opportunities: demoOpportunities(), outcomes: snapshot.outcomes ?? createDemo().outcomes ?? [], impactConfigured: true, nativeImpactConfigured: true };
+  return { ...empty(), account: { type: 'student', organization: '', verified: false }, ...snapshot, opportunities: demoOpportunities(), outcomes: snapshot.outcomes ?? createDemo().outcomes ?? [], impactConfigured: true, nativeImpactConfigured: true };
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
@@ -96,6 +106,17 @@ export function AppProvider({ children }: PropsWithChildren) {
     if(summaryResult.error && !['PGRST202','42883'].includes(summaryResult.error.code)) throw summaryResult.error;
     if (availability.error) throw availability.error;
     const spotsById = new Map<string, number>((availability.data || []).map((row: Row) => [row.opportunity_id, row.spots_left]));
+    const me = await requireClient().rpc('vf_me');
+    if (me.error && !missingRpc(me.error)) throw me.error;
+    const meRow = Array.isArray(me.data) ? me.data[0] : null;
+    const account: Account = me.error ? { type: 'student', organization: '', verified: false } : { type: meRow?.account_type ?? null, organization: meRow?.admin_organization ?? '', verified: !!meRow?.admin_verified };
+    let fellowships: Fellowship[] = [], fellowshipsReady = false;
+    if (account.type) {
+      const list = account.type === 'admin' ? await requireClient().rpc('vf_admin_fellowships') : await requireClient().rpc('vf_fellowship_directory', { p_code: null });
+      if (list.error && !missingRpc(list.error)) throw list.error;
+      fellowshipsReady = !list.error;
+      fellowships = (list.data ?? []).map(toFellowship);
+    }
     if (!mounted.current || userRef.current !== userId || modeRef.current !== 'live') return;
     const ownProfile = profiles.find(row => row.id === userId);
     if (!ownProfile) throw new Error('Your profile is unavailable. Try again, or retry account deletion if you previously requested it.');
@@ -128,7 +149,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       reviewedAt: row.reviewed_at || undefined, reviewerName: row.reviewer_id ? (profileById.get(row.reviewer_id)?.full_name || 'Nonprofit reviewer') : undefined,
     }));
     const profile: Profile = { id: userId, name: ownProfile.full_name || '', email: session.user.email || '', school: ownProfile.school || '', bio: ownProfile.bio || '', skills: ownProfile.skills || [], causes: ownProfile.causes || [], goalHours: ownProfile.goal_hours, preferences: ownProfile.service_preferences, role: staffOrganizations.length ? 'staff' : 'student' };
-    setRecords({
+    setRecords({ account, fellowships, fellowshipsReady,
       profile, opportunities,
       outcomes: (outcomeResult.data ?? []).map(r=>({id:r.id,service_entry_id:r.service_entry_id,metric:r.metric,quantity:Number(r.quantity),evidence:r.evidence,status:r.status,review_note:r.review_note,reviewed_at:r.reviewed_at})),
       research: (summaryResult.data ?? []).map((r:Row)=>({...r,volunteers:Number(r.volunteers),returning_volunteers:Number(r.returning_volunteers),verified_hours:Number(r.verified_hours)})),
@@ -216,19 +237,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         const current = supabase ? await supabase.auth.getSession() : null;
         if (current?.error) throw current.error;
         if (current?.data.session) await applySession(current.data.session);
-        else {
-          const saved = await AsyncStorage.getItem(DEMO_KEY);
-          if (saved && mounted.current) {
-            try {
-              const restored = JSON.parse(saved) as DemoSnapshot;
-              if (restored.version === 1 && restored.profile?.id === 'demo-student' && Array.isArray(restored.entries) && Array.isArray(restored.applications) && Array.isArray(restored.savedIds)) {
-                demoRef.current = restored;
-                setMode('demo');
-                setRecords(demoRecords(restored));
-              }
-            } catch { await AsyncStorage.removeItem(DEMO_KEY); }
-          }
-        }
+        else await AsyncStorage.removeItem(DEMO_KEY);
       } catch (failure) { if (mounted.current) setError(message(failure)); }
       finally { initializing = false; if (mounted.current) setReady(true); }
     })();
@@ -257,7 +266,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const signUp: AppState['signUp'] = input => run(async () => {
     validatePassword(input.password);
     if (input.name.trim().length < 2) throw new Error('Enter your name.');
-    const { data, error: authError } = await requireClient().auth.signUp({ email: safeEmail(input.email), password: input.password, options: { data: { full_name: input.name.trim() }, emailRedirectTo: redirectURL() } });
+    if (input.accountType === 'admin' && (input.organization ?? '').trim().length < 2) throw new Error('Add the school or organization you run fellowships for.');
+    const { data, error: authError } = await requireClient().auth.signUp({ email: safeEmail(input.email), password: input.password, options: { data: { full_name: input.name.trim(), account_type: input.accountType, organization_name: input.accountType === 'admin' ? (input.organization ?? '').trim() : '' }, emailRedirectTo: redirectURL() } });
     if (authError) throw authError;
     if (data.session) { userRef.current = data.session.user.id; setMode('live'); setRecords(empty()); await loadLive(data.session); }
     return { confirmationRequired: !data.session };
@@ -286,15 +296,54 @@ export function AppProvider({ children }: PropsWithChildren) {
     setMode('signedOut');
     setRecords(empty());
   });
-  const enterDemo = () => run(async () => {
-    if (modeRef.current === 'live') throw new Error('Sign out before opening the demo.');
-    userRef.current = null;
-    setMode('demo');
-    await persistDemo(demoRef.current || createDemo());
+  const signInWithGoogle = () => run(async () => {
+    const client = requireClient();
+    if (Platform.OS === 'web') {
+      const { error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectURL() } });
+      if (oauthError) throw oauthError;
+      return;
+    }
+    const redirectTo = redirectURL();
+    const { data, error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
+    if (oauthError) throw oauthError;
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return; // Cancelled by the person: not an error.
+    await handleAuthURL(result.url);
+    const current = await session();
+    userRef.current = current.user.id;
+    setMode('live');
+    setRecords(empty());
+    await loadLive(current);
   });
-  const resetDemo = () => run(async () => {
-    if (modeRef.current !== 'demo') throw new Error('Demo can only be reset while exploring the demo.');
-    await persistDemo(createDemo());
+  const reloadLive = async () => loadLive(await session());
+  const chooseAccountType = (type: AccountType, organization: string) => run(async () => {
+    await rpc('vf_choose_account_type', { p_type: type, p_organization: organization.trim() });
+    await reloadLive();
+  });
+  const findFellowships = (code: string) => run(async () => {
+    const data = await rpc('vf_fellowship_directory', { p_code: code.trim() || null });
+    return ((data ?? []) as Row[]).map(toFellowship);
+  });
+  const applyToFellowship = (id: string, note: string, code?: string) => run(async () => {
+    await rpc('vf_apply_to_fellowship', { p_fellowship_id: id, p_message: note.trim(), p_code: code?.trim() || null });
+    await reloadLive();
+  });
+  const withdrawFromFellowship = (id: string) => run(async () => { await rpc('vf_withdraw_from_fellowship', { p_fellowship_id: id }); await reloadLive(); });
+  const saveFellowship = (f: FellowshipInput) => run(async () => {
+    if (f.title.trim().length < 3) throw new Error('Give the fellowship a title of at least 3 characters.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(f.endsOn)) throw new Error('Use dates like 2027-01-15.');
+    if (f.endsOn < f.startsOn) throw new Error('The end date must be on or after the start date.');
+    if (f.applyBy && !/^\d{4}-\d{2}-\d{2}$/.test(f.applyBy)) throw new Error('Use a date like 2027-01-05 for the apply-by date, or leave it empty.');
+    const id = await rpc('vf_admin_save_fellowship', { p_id: f.id ?? null, p_title: f.title, p_summary: f.summary, p_description: f.description, p_focus: f.focus, p_location: f.location, p_remote: f.remote, p_starts_on: f.startsOn, p_ends_on: f.endsOn, p_apply_by: f.applyBy || null, p_capacity: f.capacity, p_weekly_hours: f.weeklyHours, p_status: f.status });
+    await reloadLive();
+    return String(id);
+  });
+  const deleteFellowship = (id: string) => run(async () => { await rpc('vf_admin_delete_fellowship', { p_id: id }); await reloadLive(); });
+  const newJoinCode = (id: string) => run(async () => { const code = await rpc('vf_admin_new_join_code', { p_id: id }); await reloadLive(); return String(code); });
+  const roster = (id: string) => run(async () => ((await rpc('vf_admin_roster', { p_id: id })) ?? []).map((r: Row): RosterEntry => ({ studentId: r.student_id, name: r.full_name, school: r.school ?? '', skills: r.skills ?? [], causes: r.causes ?? [], message: r.message ?? '', status: r.status, adminNote: r.admin_note ?? '', createdAt: r.created_at })));
+  const decideEnrollment = (id: string, studentId: string, decision: 'accepted' | 'declined', note: string) => run(async () => {
+    await rpc('vf_admin_decide_enrollment', { p_id: id, p_student: studentId, p_decision: decision, p_note: note.trim() });
+    await reloadLive();
   });
   const saveOpportunity = (id: string) => run(async () => {
     if (modeRef.current === 'demo') {
@@ -452,7 +501,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setRecords(empty());
   });
 
-  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, enterDemo, resetDemo, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
+  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, signInWithGoogle, chooseAccountType, findFellowships, applyToFellowship, withdrawFromFellowship, saveFellowship, deleteFellowship, newJoinCode, roster, decideEnrollment, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

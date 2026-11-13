@@ -1,47 +1,22 @@
 import type { Metadata, Viewport } from 'next'
+import { Bricolage_Grotesque, DM_Sans } from 'next/font/google'
 import './globals.css'
-import { Navbar } from '@/components/layout/Navbar'
-import { SiteAssistant } from '@/components/layout/SiteAssistant'
-import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
-export const viewport: Viewport = {
-  themeColor: '#1f2937',
-}
+const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', weight: ['500', '600', '700', '800'] })
+const body = DM_Sans({ subsets: ['latin'], variable: '--font-body' })
 
 export const metadata: Metadata = {
-  title: 'VoluForge - Turn Community Needs Into Student-Led Action',
-  description:
-    'VoluForge helps schools, clubs, and local organizations transform real community needs into organized service projects, complete with plans, roles, timelines, and impact reports.',
-  keywords: [
-    'student service',
-    'community service',
-    'volunteer projects',
-    'student leadership',
-  ],
-  authors: [{ name: 'Aaditya Mitra' }],
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://voluforge.com',
-    siteName: 'VoluForge',
-  },
+  metadataBase: new URL('https://voluforge.xyz'),
+  title: { default: 'VoluForge: volunteering and fellowships for students', template: '%s · VoluForge' },
+  description: 'Students find volunteer work and join fellowships run by their schools and community organizations. Administrators create fellowships and manage every applicant in one place.',
+  openGraph: { siteName: 'VoluForge', type: 'website' },
 }
+export const viewport: Viewport = { themeColor: '#F8F5ED' }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="antialiased">
-      <body className="theme-page relative min-h-screen font-sans">
-        <Navbar />
-        {children}
-        <div className="theme-floating">
-          <SiteAssistant />
-          <ThemeToggle />
-        </div>
-      </body>
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
+      <body className="flex min-h-screen flex-col bg-cream font-sans text-ink">{children}</body>
     </html>
   )
 }
