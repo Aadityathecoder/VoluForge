@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, DM_Sans } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', weight: ['500', '600', '700', '800'] })
-const body = DM_Sans({ subsets: ['latin'], variable: '--font-body' })
+// Fonts ship with the site so builds never depend on reaching Google Fonts.
+const display = localFont({
+  variable: '--font-display',
+  src: [
+    { path: './fonts/BricolageGrotesque-700.ttf', weight: '700' },
+    { path: './fonts/BricolageGrotesque-800.ttf', weight: '800' },
+  ],
+})
+const body = localFont({ variable: '--font-body', src: './fonts/DMSans.ttf', weight: '100 900' })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://voluforge.xyz'),
