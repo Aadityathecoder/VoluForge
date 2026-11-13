@@ -2,7 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { AppState as NativeAppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
 import { File } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import type { Session } from '@supabase/supabase-js';
@@ -296,25 +295,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     setMode('signedOut');
     setRecords(empty());
   });
-  const signInWithGoogle = () => run(async () => {
-    const client = requireClient();
-    if (Platform.OS === 'web') {
-      const { error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectURL() } });
-      if (oauthError) throw oauthError;
-      return;
-    }
-    const redirectTo = redirectURL();
-    const { data, error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
-    if (oauthError) throw oauthError;
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return; // Cancelled by the person: not an error.
-    await handleAuthURL(result.url);
-    const current = await session();
-    userRef.current = current.user.id;
-    setMode('live');
-    setRecords(empty());
-    await loadLive(current);
-  });
   const reloadLive = async () => loadLive(await session());
   const chooseAccountType = (type: AccountType, organization: string) => run(async () => {
     await rpc('vf_choose_account_type', { p_type: type, p_organization: organization.trim() });
@@ -501,7 +481,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setRecords(empty());
   });
 
-  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, signInWithGoogle, chooseAccountType, findFellowships, applyToFellowship, withdrawFromFellowship, saveFellowship, deleteFellowship, newJoinCode, roster, decideEnrollment, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
+  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, chooseAccountType, findFellowships, applyToFellowship, withdrawFromFellowship, saveFellowship, deleteFellowship, newJoinCode, roster, decideEnrollment, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

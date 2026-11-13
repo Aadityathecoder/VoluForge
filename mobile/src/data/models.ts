@@ -139,7 +139,6 @@ export interface AppState {
   account: Account;
   fellowships: Fellowship[];
   fellowshipsReady: boolean;
-  signInWithGoogle(): Promise<void>;
   chooseAccountType(type: AccountType, organization: string): Promise<void>;
   findFellowships(code: string): Promise<Fellowship[]>;
   applyToFellowship(id: string, message: string, code?: string): Promise<void>;

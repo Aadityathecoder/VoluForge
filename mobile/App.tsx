@@ -1,7 +1,7 @@
 import {BrandMark} from './src/ui/BrandMark';
 import {webRoute,webTabPaths,webSheetPath} from './src/data/webNavigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/data/AppProvider';
@@ -24,7 +24,7 @@ type TabDef={id:Tab;label:string;icon:IconName;active:IconName};
 const studentTabs:TabDef[]=[{id:'home',label:'Home',icon:'home-outline',active:'home'},{id:'fellowships',label:'Fellowships',icon:'people-outline',active:'people'},{id:'explore',label:'Explore',icon:'compass-outline',active:'compass'},{id:'activity',label:'Activity',icon:'calendar-outline',active:'calendar'},{id:'profile',label:'You',icon:'person-outline',active:'person'}];
 const adminTabs:TabDef[]=[{id:'admin',label:'Fellowships',icon:'people-outline',active:'people'},{id:'profile',label:'You',icon:'person-outline',active:'person'}];
 export default function App(){const[fontsLoaded]=useFonts({BricolageGrotesque_700Bold,BricolageGrotesque_800ExtraBold,DMSans:require('./assets/fonts/DMSans.ttf')});if(!fontsLoaded)return <View style={{flex:1,backgroundColor:C.bg}}/>;return <SafeAreaProvider><AppProvider><Root/></AppProvider></SafeAreaProvider>;}
-function Root(){const app=useApp(),{height,width}=useWindowDimensions();const admin=app.account.type==='admin';const tabs=admin?adminTabs:studentTabs;const home:Tab=admin?'admin':'home';const desktop=Platform.OS==='web'&&width>=960;const[exploreCause,setExploreCause]=useState('All');const[tab,setTab]=useState<Tab>('home'),[detail,setDetail]=useState<string|null>(null),[sheet,setSheet]=useState<Sheet|null>(null),[toast,setToast]=useState('');const scroll=useRef<ScrollView>(null),toastTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+function Root(){const app=useApp(),{height,width}=useWindowDimensions();const admin=app.account.type==='admin';const tabs=admin?adminTabs:studentTabs;const home:Tab=admin?'admin':'home';const desktop=Platform.OS==='web'&&width>=960;const[exploreCause,setExploreCause]=useState('All');const[tab,setTab]=useState<Tab>('home'),[detail,setDetail]=useState<string|null>(null),[sheet,setSheet]=useState<Sheet|null>(null),[toast,setToast]=useState('');const scroll=useRef<ScrollViewInstance>(null),toastTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const openSheet=(value:Sheet)=>{const path=webSheetPath(value);if(Platform.OS==='web'&&path)window.history.pushState({},'',path);setSheet(value);};
  const closeSheet=()=>{if(Platform.OS==='web'&&sheet&&webSheetPath(sheet))window.history.replaceState({},'',detail?`/opportunity?id=${encodeURIComponent(detail)}`:webTabPaths[tab]);setSheet(null);};
  const notify=(value:string)=>{setToast(value);if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),6000);};

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
+const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Rect } from 'react-native-svg';
@@ -17,7 +18,7 @@ export function Heading({ children, style }: { children: React.ReactNode; style?
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function PressScale({ style, children, onPressIn, onPressOut, ...rest }: React.ComponentProps<typeof Pressable> & { style?: StyleProp<ViewStyle> }) {
  const [down, setDown] = useState(false); const reduced = useReducedMotion();
- return <AnimatedPressable {...rest} pressRetentionOffset={{ top: 12, bottom: 12, left: 12, right: 12 }} onPressIn={e => { setDown(true); onPressIn?.(e); }} onPressOut={e => { setDown(false); onPressOut?.(e); }} style={[style as ViewStyle, { transform: [{ scale: down && !reduced ? .97 : 1 }], transitionProperty: 'transform', transitionDuration: 120, transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' } as any]}>{children as React.ReactNode}</AnimatedPressable>;
+ return <AnimatedPressable {...rest} pressRetentionOffset={{ top: 12, bottom: 12, left: 12, right: 12 }} onPressIn={e => { setDown(true); onPressIn?.(e); }} onPressOut={e => { setDown(false); onPressOut?.(e); }} style={[style as ViewStyle, { transform: [{ scale: down && !reduced ? .97 : 1 }], transitionProperty: 'transform', transitionDuration: 120, transitionTimingFunction: EASE_OUT } as any]}>{children as React.ReactNode}</AnimatedPressable>;
 }
 export function Eyebrow({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) { return <Txt testID="vf-section-label" style={[s.eyebrow, style]}>{children}</Txt>; }
 export function Spark({ size = 42, color = C.orange }: { size?: number; color?: string }) { return <Svg width={size} height={size} viewBox="0 0 100 100" {...(Platform.OS === 'web' ? {'aria-hidden': true} : {accessibilityElementsHidden: true})}><G>{Array.from({ length: 8 }, (_, i) => <Rect key={i} x="44" y="5" width="12" height="45" rx="6" fill={color} transform={`rotate(${i * 45} 50 50)`} />)}</G><Circle cx="50" cy="50" r="12" fill={C.ink} /></Svg>; }
