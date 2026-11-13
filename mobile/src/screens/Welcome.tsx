@@ -1,12 +1,49 @@
-import {useDesktop} from '../ui/responsive';
-import {BrandMark} from '../ui/BrandMark';
 import React from 'react';
-import { Platform, Pressable, View } from 'react-native';
-import { useApp } from '../data/AppProvider';
+import { Pressable, View } from 'react-native';
 import { useNav } from '../ui/navigation';
-import { C, Button, Eyebrow, Spark, Sprout, Title, Txt, s } from '../ui/theme';
-import { errorText } from '../ui/helpers';
+import { useDesktop } from '../ui/responsive';
+import { BrandMark } from '../ui/BrandMark';
+import { C, Button, F, Title, Txt, s } from '../ui/theme';
 
-export function Welcome(){const app=useApp(),nav=useNav(),desktop=useDesktop();if(desktop)return <DesktopWelcome/>;return <View style={{flex:1,padding:28,paddingTop:28,minHeight:740}}><View style={[s.row,{gap:8}]}><BrandMark size={30}/><Txt style={{fontWeight:'900',fontSize:21,letterSpacing:-.8}}>voluforge</Txt></View><View style={{flex:1,justifyContent:'center',paddingVertical:40}}><View style={{alignSelf:'flex-end',transform:[{rotate:'12deg'}],marginRight:8,marginBottom:-20}}><Sprout size={126}/></View><Title style={{fontSize:64,lineHeight:66,letterSpacing:-2.3}}>Do a little.{'\n'}Change{'\n'}a <Txt style={{fontStyle:'italic',fontWeight:'500',fontSize:64}}>lot.</Txt></Title><Txt style={[s.body,{fontSize:17,lineHeight:26,marginTop:25,maxWidth:290}]}>Find meaningful ways to give back. Turn your time into something that matters.</Txt>{Platform.OS!=='web'&&<Eyebrow style={{marginTop:27,color:C.forest}}>Your next good thing starts here</Eyebrow>}</View><View style={{gap:13}}><Button title="Get started" icon="arrow-forward" onPress={()=>nav.sheet({kind:'auth',id:'signup'})}/><Button title="Take a look around" variant="outline" onPress={()=>{void app.enterDemo().catch(e=>nav.notify(errorText(e)));}} busy={app.loading}/><Txt style={{textAlign:'center',fontSize:11,color:C.muted,lineHeight:18}}>Explore sample opportunities, no account needed.</Txt><View style={[s.row,{justifyContent:'center',gap:15,marginTop:4}]}><Pressable accessibilityRole="link" onPress={()=>nav.sheet({kind:'privacy'})}><Txt style={{fontSize:11,textDecorationLine:'underline',color:C.muted}}>Privacy</Txt></Pressable><Pressable accessibilityRole="link" onPress={()=>nav.sheet({kind:'terms'})}><Txt style={{fontSize:11,textDecorationLine:'underline',color:C.muted}}>Terms</Txt></Pressable></View></View></View>;}
+const seats = [['Accepted', C.green, C.forest], ['Accepted', C.green, C.forest], ['Waiting for review', C.peach, C.ink], ['Open', 'transparent', C.muted]] as const;
 
-function DesktopWelcome(){const app=useApp(),nav=useNav();return <View style={{padding:48,minHeight:720,flex:1}}><View style={[s.between,{marginBottom:50}]}><View style={[s.row,{gap:10}]}><BrandMark size={38}/><Txt style={{fontSize:27,fontWeight:'900',letterSpacing:-1}}>voluforge</Txt></View><Button title="Sign in" variant="outline" onPress={()=>nav.sheet({kind:'auth'})}/></View><View style={{flex:1,flexDirection:'row',alignItems:'center',gap:48}}><View style={{flex:1,gap:25}}><Title style={{fontSize:72,lineHeight:78,letterSpacing:-2.4}}>Do a little.{'\n'}Change a <Txt style={{fontSize:72,fontStyle:'italic',fontWeight:'500'}}>lot.</Txt></Title><Txt style={[s.body,{fontSize:19,lineHeight:30,maxWidth:450}]}>Find meaningful ways to give back. Turn your time into something that matters.</Txt><View style={[s.row,{gap:12,flexWrap:'wrap',marginTop:10}]}><Button title="Get started" icon="arrow-forward" onPress={()=>nav.sheet({kind:'auth',id:'signup'})}/><Button title="Take a look around" variant="outline" busy={app.loading} onPress={()=>{void app.enterDemo().catch(e=>nav.notify(errorText(e)));}}/></View><Txt style={{fontSize:12,color:C.muted}}>Explore sample opportunities, no account needed.</Txt></View><View style={{width:320,alignItems:'center',gap:24}}><Sprout size={300}/><View style={{backgroundColor:C.peach,borderRadius:16,padding:24,gap:10,width:300}}><Txt style={{fontSize:21,fontWeight:'800'}}>Your skills. Someone’s spark.</Txt><Txt style={[s.body,{color:C.ink}]}>Find your fit. Show up. See what changes.</Txt><Txt style={{fontSize:12,color:C.ink,marginTop:5}}>Small actions. Real-world change.</Txt></View></View></View><View style={[s.between,{borderTopWidth:1,borderColor:C.line,paddingTop:24,marginTop:40}]}><Txt style={{fontSize:12,color:C.muted}}>Made for a little more good.</Txt><View style={[s.row,{gap:24}]}>{['privacy','terms','support'].map(kind=><Pressable key={kind} accessibilityRole="link" onPress={()=>nav.sheet({kind:kind as 'privacy'|'terms'|'support'})}><Txt style={{fontSize:12,color:C.muted}}>{kind[0].toUpperCase()+kind.slice(1)}</Txt></Pressable>)}</View></View></View>;}
+function SignupSheet() {
+  return <View style={{ marginRight: 8, marginTop: 8 }}>
+    <View style={{ position: 'absolute', top: -8, right: -8, bottom: 8, left: 8, backgroundColor: C.orange, borderRadius: 16 }}/>
+    <View style={{ backgroundColor: C.white, borderRadius: 16, borderWidth: 1.5, borderColor: C.ink, overflow: 'hidden' }}>
+      <View style={{ padding: 16, borderBottomWidth: 1.5, borderColor: C.ink, gap: 3 }}>
+        <Txt style={{ fontSize: 12, color: C.muted }}>Harbor Learning Lab</Txt>
+        <Txt style={{ fontSize: 19, fontFamily: F.display }}>Saturday Reading Fellowship</Txt>
+      </View>
+      {seats.map(([label, bg, fg], i) => <View key={i} style={[s.row, { gap: 14, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: C.line }]}>
+        <Txt style={{ fontSize: 12, color: C.muted, width: 44 }}>Seat {i + 1}</Txt>
+        <View style={{ backgroundColor: bg, borderRadius: 100, paddingHorizontal: 9, paddingVertical: 3, borderWidth: bg === 'transparent' ? 1 : 0, borderColor: C.line, borderStyle: 'dashed' }}><Txt style={{ fontSize: 11, fontWeight: '700', color: fg }}>{label}</Txt></View>
+      </View>)}
+    </View>
+  </View>;
+}
+
+export function Welcome() {
+  const nav = useNav(), desktop = useDesktop();
+  return <View style={{ flex: 1, padding: desktop ? 48 : 24, paddingTop: desktop ? 36 : 18, minHeight: desktop ? 720 : 700 }}>
+    <View style={s.between}>
+      <View style={[s.row, { gap: 9 }]}><BrandMark size={30}/><Txt style={{ fontSize: 21, fontFamily: F.display, letterSpacing: -.6 }}>voluforge</Txt></View>
+      <Pressable accessibilityRole="button" onPress={() => nav.sheet({ kind: 'auth' })} hitSlop={10} style={{ padding: 8 }}><Txt style={{ fontWeight: '700' }}>Sign in</Txt></Pressable>
+    </View>
+    <View style={{ flex: 1, justifyContent: 'center', gap: 30, paddingVertical: 28, flexDirection: desktop ? 'row' : 'column', alignItems: desktop ? 'center' : 'stretch' }}>
+      <View style={{ gap: 16, flex: desktop ? 1 : undefined }}>
+        <Title style={{ fontSize: desktop ? 68 : 50, lineHeight: desktop ? 68 : 50, letterSpacing: desktop ? -2.2 : -1.6 }}>Give your time where it counts.</Title>
+        <Txt style={[s.body, { fontSize: 17, lineHeight: 26, maxWidth: 420 }]}>Join fellowships run by your school or community, find volunteer work, and keep a record of approved hours.</Txt>
+      </View>
+      <View style={{ width: desktop ? 360 : '100%', maxWidth: 420, alignSelf: 'center' }}><SignupSheet/></View>
+    </View>
+    <View style={{ gap: 12, maxWidth: desktop ? 360 : undefined }}>
+      <Button title="Create an account" variant="primary" onPress={() => nav.sheet({ kind: 'auth', id: 'signup' })}/>
+      <Button title="Sign in" variant="outline" onPress={() => nav.sheet({ kind: 'auth' })}/>
+      <Txt style={{ fontSize: 13, color: C.muted, textAlign: desktop ? 'left' : 'center', lineHeight: 20 }}>Running a fellowship? Create an administrator account.</Txt>
+      <View style={[s.row, { justifyContent: desktop ? 'flex-start' : 'center', gap: 18, marginTop: 2 }]}>
+        {(['privacy', 'terms', 'support'] as const).map(kind => <Pressable key={kind} accessibilityRole="link" onPress={() => nav.sheet({ kind })} hitSlop={8}><Txt style={{ fontSize: 12, color: C.muted, textDecorationLine: 'underline' }}>{kind[0].toUpperCase() + kind.slice(1)}</Txt></Pressable>)}
+      </View>
+    </View>
+  </View>;
+}

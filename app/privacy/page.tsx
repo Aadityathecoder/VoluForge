@@ -1,61 +1,23 @@
-import Link from 'next/link'
-
-export default function PrivacyPage() {
+import type { Metadata } from 'next'
+import { ProsePage } from '@/components/Prose'
+export const metadata: Metadata = { title: 'Privacy' }
+export default function Privacy() {
   return (
-    <div className="container-max py-16 max-w-3xl">
-      <h1 className="text-4xl font-bold text-slate-50 mb-6">Privacy</h1>
-      <p className="text-slate-400 mb-10 leading-relaxed">
-        VoluForge is designed for schools and community organizations. This page summarizes how we treat account and
-        project information. Configure your production deployment with policies appropriate for your institution.
-      </p>
-
-      <div className="space-y-10 text-slate-400 leading-relaxed">
-        <section>
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">What we collect</h2>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>Account details you provide at sign-up (name, email, role, school or organization, optional location).</li>
-            <li>Content you submit, such as community needs, generated project kits, and project updates stored in our database.</li>
-            <li>Standard technical data from hosting (for example access logs), depending on how you deploy the site.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">How we use data</h2>
-          <p>
-            Information is used to run the service: authentication, showing relevant needs and projects, and—when
-            configured—calling an AI provider to draft project kits. We do not sell personal information.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">Third parties</h2>
-          <p>
-            VoluForge relies on Supabase for authentication and database hosting. AI kit generation uses Anthropic when
-            an API key is configured. Review their terms and data processing agreements for your deployment.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">Your choices</h2>
-          <p>
-            You can sign out at any time, request deletion of your account through your administrator or project owner,
-            and avoid submitting sensitive personal data in free-text fields where possible.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-slate-100 mb-3">Contact</h2>
-          <p>
-            For privacy questions related to this deployment, contact the site operator at your school or organization.
-          </p>
-        </section>
-      </div>
-
-      <p className="mt-12 text-sm text-slate-500">
-        <Link href="/" className="text-orange-400 hover:text-orange-300">
-          ← Back home
-        </Link>
-      </p>
-    </div>
+    <ProsePage title="Privacy" updated="November 13, 2026">
+      <p>VoluForge helps students find volunteer work and fellowships. We collect only what that needs, and we don't sell personal information or show ads.</p>
+      <h2>What we store</h2>
+      <ul>
+        <li>Your account: name, email address, and, if you use Google, the basic profile Google shares at sign-in.</li>
+        <li>Your profile: school, short bio, skills, causes and hours goal, if you add them.</li>
+        <li>Your activity: fellowship and volunteer applications, decisions, and service hours you log.</li>
+        <li>Administrators: the school or organization name you host fellowships for.</li>
+      </ul>
+      <h2>Who can see it</h2>
+      <p>When you apply to a fellowship, its administrator sees your name, school, skills, causes and the note you wrote. They never see your email address through VoluForge. Volunteer organizations see what you send them when you apply. Nobody else can browse your profile.</p>
+      <h2>Your choices</h2>
+      <p>You can edit your profile at any time and delete your account from Profile and settings. Deleting removes your profile, applications, hosted fellowships and logged hours.</p>
+      <h2>Contact</h2>
+      <p>Questions about your data: see the Support page.</p>
+    </ProsePage>
   )
 }

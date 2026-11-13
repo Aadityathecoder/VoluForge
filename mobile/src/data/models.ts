@@ -103,6 +103,18 @@ export interface ServiceInput {
 
 export type ProfilePatch = Partial<Pick<Profile, 'name' | 'school' | 'bio' | 'skills' | 'causes' | 'goalHours' | 'preferences'>>;
 
+export type AccountType = 'student' | 'admin';
+export interface Account { type: AccountType | null; organization: string; verified: boolean }
+export interface Fellowship {
+  id: string; title: string; summary: string; description: string; focus: string; location: string; remote: boolean;
+  startsOn: string; endsOn: string; applyBy: string | null; capacity: number; weeklyHours: number;
+  status: 'draft' | 'open' | 'closed'; host: string; hostVerified: boolean; seatsLeft: number;
+  myStatus: 'pending' | 'accepted' | 'declined' | 'withdrawn' | null;
+  joinCode?: string; pending?: number; accepted?: number;
+}
+export interface RosterEntry { studentId: string; name: string; school: string; skills: string[]; causes: string[]; message: string; status: 'pending' | 'accepted' | 'declined' | 'withdrawn'; adminNote: string; createdAt: string }
+export interface FellowshipInput { id?: string; title: string; summary: string; description: string; focus: string; location: string; remote: boolean; startsOn: string; endsOn: string; applyBy: string | null; capacity: number; weeklyHours: number; status: 'draft' | 'open' | 'closed' }
+
 export interface AppState {
   mode: Mode;
   ready: boolean;
@@ -124,15 +136,26 @@ export interface AppState {
   research: { cause: string; volunteers: number; returning_volunteers: number; verified_hours: number }[];
   impactConfigured: boolean;
   nativeImpactConfigured: boolean;
+  account: Account;
+  fellowships: Fellowship[];
+  fellowshipsReady: boolean;
+  signInWithGoogle(): Promise<void>;
+  chooseAccountType(type: AccountType, organization: string): Promise<void>;
+  findFellowships(code: string): Promise<Fellowship[]>;
+  applyToFellowship(id: string, message: string, code?: string): Promise<void>;
+  withdrawFromFellowship(id: string): Promise<void>;
+  saveFellowship(input: FellowshipInput): Promise<string>;
+  deleteFellowship(id: string): Promise<void>;
+  newJoinCode(id: string): Promise<string>;
+  roster(id: string): Promise<RosterEntry[]>;
+  decideEnrollment(id: string, studentId: string, decision: 'accepted' | 'declined', note: string): Promise<void>;
   recordOutcome(entryId: string, metric: string, quantity: number, evidence: string): Promise<void>;
   reviewOutcome(id: string, decision: 'approved' | 'rejected', note?: string): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
-  signUp(input: { name: string; email: string; password: string }): Promise<{ confirmationRequired: boolean }>;
+  signUp(input: { name: string; email: string; password: string; accountType: AccountType; organization?: string }): Promise<{ confirmationRequired: boolean }>;
   resetPassword(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
   signOut(): Promise<void>;
-  enterDemo(): Promise<void>;
-  resetDemo(): Promise<void>;
   saveOpportunity(id: string): Promise<void>;
   apply(opportunityId: string, statement: string, availability: string): Promise<void>;
   withdraw(applicationId: string): Promise<void>;
