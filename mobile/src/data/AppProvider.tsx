@@ -62,6 +62,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const persistenceRef = useRef<Promise<unknown>>(Promise.resolve());
   const pendingRef = useRef(0);
   const mounted = useRef(true);
+  const googleRedirect = useRef<string | null>(null);
 
   const setMode = useCallback((next: Mode) => { modeRef.current = next; setModeState(next); }, []);
   const setRecords = useCallback((next: Records) => { recordsRef.current = next; setRecordsState(next); }, []);
@@ -226,7 +227,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       // Keep Supabase network calls outside the auth listener's internal lock.
       setTimeout(() => { if (mounted.current) void applySession(nextSession).catch(failure => setError(message(failure))); }, 0);
     });
-    const linkListener = Linking.addEventListener('url', event => { void handleAuthURL(event.url).catch(failure => setError(message(failure))); });
+    const linkListener = Linking.addEventListener('url', event => {
+      const redirect = googleRedirect.current;
+      if (redirect && event.url.split(/[?#]/, 1)[0] === redirect) return;
+      void handleAuthURL(event.url).catch(failure => setError(message(failure)));
+    });
     const appListener = NativeAppState.addEventListener('change', state => {
       if (state === 'active') { supabase?.auth.startAutoRefresh(); }
       else { supabase?.auth.stopAutoRefresh(); }
@@ -304,16 +309,21 @@ export function AppProvider({ children }: PropsWithChildren) {
       return;
     }
     const redirectTo = redirectURL();
+    if (!redirectTo.startsWith('voluforge:')) {
+      throw new Error('Google sign-in requires an installed VoluForge build. You can sign in with email in Expo Go.');
+    }
     const { data, error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
     if (oauthError) throw oauthError;
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return; // Cancelled by the person: not an error.
-    await handleAuthURL(result.url);
-    const current = await session();
-    userRef.current = current.user.id;
-    setMode('live');
-    setRecords(empty());
-    await loadLive(current);
+    googleRedirect.current = redirectTo;
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === 'success') {
+        await handleAuthURL(result.url);
+        await session();
+      }
+    } finally {
+      googleRedirect.current = null;
+    }
   });
   const reloadLive = async () => loadLive(await session());
   const chooseAccountType = (type: AccountType, organization: string) => run(async () => {
