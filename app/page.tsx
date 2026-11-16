@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { GoogleButton } from '@/components/GoogleButton'
+import { getViewer, homeFor } from '@/lib/viewer'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 
@@ -18,10 +20,11 @@ const steps = [
   { title: 'Fellows get to work', body: 'Accepted students see the fellowship on their home page and log their service alongside it.' },
 ]
 
-export default function Landing() {
+export default async function Landing() {
+  const viewer = await getViewer()
   return (
     <>
-      <SiteHeader />
+      <SiteHeader viewer={viewer} />
       <main>
         <section className="page grid items-center gap-12 pb-20 pt-14 lg:grid-cols-[1.1fr_.9fr] lg:pt-20">
           <div>
@@ -32,11 +35,16 @@ export default function Landing() {
               VoluForge connects students with volunteer work and with fellowships run by their schools and community
               organizations. Students apply in a few minutes. Administrators run the whole cohort from one place.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/signup" className="btn-primary px-6">Create a student account</Link>
-              <Link href="/signup?role=admin" className="btn-outline px-6">I run a fellowship</Link>
+            <div className="mt-9 flex flex-wrap items-start gap-3">
+              {viewer ? (
+                <Link href={homeFor(viewer)} className="btn-primary px-6">Open VoluForge</Link>
+              ) : (
+                <>
+                  <GoogleButton />
+                  <Link href="/signup" className="btn-outline px-6">Create an account with email</Link>
+                </>
+              )}
             </div>
-            <p className="mt-5 text-sm text-muted">Free for students. Sign in with Google or email.</p>
           </div>
 
           <figure aria-label="Example fellowship sign-up sheet" className="relative mr-2 mt-2 sm:mr-3 sm:mt-3">
@@ -110,10 +118,6 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="page flex flex-col items-start justify-between gap-6 py-16 sm:flex-row sm:items-center">
-          <p className="max-w-xl font-display text-3xl font-bold leading-tight tracking-[-0.02em]">Ready when you are. It takes about a minute to set up.</p>
-          <div className="flex gap-3"><Link href="/signup" className="btn-primary">Create account</Link><Link href="/login" className="btn-quiet">Sign in</Link></div>
-        </section>
       </main>
       <SiteFooter />
     </>

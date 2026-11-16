@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
+import { useApp } from '../data/AppProvider';
 import { useNav } from '../ui/navigation';
 import { useDesktop } from '../ui/responsive';
 import { BrandMark } from '../ui/BrandMark';
@@ -24,11 +25,11 @@ function SignupSheet() {
 }
 
 export function Welcome() {
-  const nav = useNav(), desktop = useDesktop();
+  const nav = useNav(), desktop = useDesktop(), app = useApp();
   return <View style={{ flex: 1, padding: desktop ? 48 : 24, paddingTop: desktop ? 36 : 18, minHeight: desktop ? 720 : 700 }}>
     <View style={s.between}>
       <View style={[s.row, { gap: 9 }]}><BrandMark size={30}/><Txt style={{ fontSize: 21, fontFamily: F.display, letterSpacing: -.6 }}>voluforge</Txt></View>
-      <Pressable accessibilityRole="button" onPress={() => nav.sheet({ kind: 'auth' })} hitSlop={10} style={{ padding: 8 }}><Txt style={{ fontWeight: '700' }}>Sign in</Txt></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => nav.sheet({ kind: 'auth' })} hitSlop={10} style={{ padding: 8 }}><Txt style={{ fontWeight: '700' }}>Sign in with email</Txt></Pressable>
     </View>
     <View style={{ flex: 1, justifyContent: 'center', gap: 30, paddingVertical: 28, flexDirection: desktop ? 'row' : 'column', alignItems: desktop ? 'center' : 'stretch' }}>
       <View style={{ gap: 16, flex: desktop ? 1 : undefined }}>
@@ -38,8 +39,9 @@ export function Welcome() {
       <View style={{ width: desktop ? 360 : '100%', maxWidth: 420, alignSelf: 'center' }}><SignupSheet/></View>
     </View>
     <View style={{ gap: 12, maxWidth: desktop ? 360 : undefined }}>
-      <Button title="Create an account" variant="primary" onPress={() => nav.sheet({ kind: 'auth', id: 'signup' })}/>
-      <Button title="Sign in" variant="outline" onPress={() => nav.sheet({ kind: 'auth' })}/>
+      <Button title="Continue with Google" icon="logo-google" iconFirst variant="outline" busy={app.loading}
+        onPress={() => { void app.signInWithGoogle().catch(() => {}); }}/>
+      <Button title="Create an account with email" variant="soft" onPress={() => nav.sheet({ kind: 'auth', id: 'signup' })}/>
       <Txt style={{ fontSize: 13, color: C.muted, textAlign: desktop ? 'left' : 'center', lineHeight: 20 }}>Running a fellowship? Create an administrator account.</Txt>
       <View style={[s.row, { justifyContent: desktop ? 'flex-start' : 'center', gap: 18, marginTop: 2 }]}>
         {(['privacy', 'terms', 'support'] as const).map(kind => <Pressable key={kind} accessibilityRole="link" onPress={() => nav.sheet({ kind })} hitSlop={8}><Txt style={{ fontSize: 12, color: C.muted, textDecorationLine: 'underline' }}>{kind[0].toUpperCase() + kind.slice(1)}</Txt></Pressable>)}
