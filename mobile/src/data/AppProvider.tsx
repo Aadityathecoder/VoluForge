@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { AppState as NativeAppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { File } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import type { Session } from '@supabase/supabase-js';
@@ -61,6 +62,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const persistenceRef = useRef<Promise<unknown>>(Promise.resolve());
   const pendingRef = useRef(0);
   const mounted = useRef(true);
+  const googleRedirect = useRef<string | null>(null);
 
   const setMode = useCallback((next: Mode) => { modeRef.current = next; setModeState(next); }, []);
   const setRecords = useCallback((next: Records) => { recordsRef.current = next; setRecordsState(next); }, []);
@@ -225,7 +227,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       // Keep Supabase network calls outside the auth listener's internal lock.
       setTimeout(() => { if (mounted.current) void applySession(nextSession).catch(failure => setError(message(failure))); }, 0);
     });
-    const linkListener = Linking.addEventListener('url', event => { void handleAuthURL(event.url).catch(failure => setError(message(failure))); });
+    const linkListener = Linking.addEventListener('url', event => {
+      const redirect = googleRedirect.current;
+      if (redirect && event.url.split(/[?#]/, 1)[0] === redirect) return;
+      void handleAuthURL(event.url).catch(failure => setError(message(failure)));
+    });
     const appListener = NativeAppState.addEventListener('change', state => {
       if (state === 'active') { supabase?.auth.startAutoRefresh(); }
       else { supabase?.auth.stopAutoRefresh(); }
@@ -294,6 +300,30 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPasswordRecovery(false);
     setMode('signedOut');
     setRecords(empty());
+  });
+  const signInWithGoogle = () => run(async () => {
+    const client = requireClient();
+    if (Platform.OS === 'web') {
+      const { error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectURL() } });
+      if (oauthError) throw oauthError;
+      return;
+    }
+    const redirectTo = redirectURL();
+    if (!redirectTo.startsWith('voluforge:')) {
+      throw new Error('Google sign-in requires an installed VoluForge build. You can sign in with email in Expo Go.');
+    }
+    const { data, error: oauthError } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
+    if (oauthError) throw oauthError;
+    googleRedirect.current = redirectTo;
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type === 'success') {
+        await handleAuthURL(result.url);
+        await session();
+      }
+    } finally {
+      googleRedirect.current = null;
+    }
   });
   const reloadLive = async () => loadLive(await session());
   const chooseAccountType = (type: AccountType, organization: string) => run(async () => {
@@ -481,7 +511,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setRecords(empty());
   });
 
-  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, chooseAccountType, findFellowships, applyToFellowship, withdrawFromFellowship, saveFellowship, deleteFellowship, newJoinCode, roster, decideEnrollment, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
+  const value: AppState = { ...records, mode, ready, loading, error, configured: isConfigured, passwordRecovery, signIn, signUp, resetPassword, updatePassword, signOut, signInWithGoogle, chooseAccountType, findFellowships, applyToFellowship, withdrawFromFellowship, saveFellowship, deleteFellowship, newJoinCode, roster, decideEnrollment, saveOpportunity, apply, withdraw, submitService, startTimer, stopTimer, cancelTimer, uploadProof, recordOutcome, reviewOutcome, updateProfile, reviewApplication, reviewService, deleteAccount, refresh };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
