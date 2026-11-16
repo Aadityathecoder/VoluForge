@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { Logo } from './Logo'
 import { getViewer, homeFor } from '@/lib/viewer'
 
-export async function SiteHeader() {
-  const viewer = await getViewer()
+export async function SiteHeader({ viewer: providedViewer }: { viewer?: Awaited<ReturnType<typeof getViewer>> }) {
+  const viewer = providedViewer === undefined ? await getViewer() : providedViewer
   return (
     <header className="border-b border-line bg-cream/95">
       <div className="page flex h-16 items-center justify-between gap-6">
@@ -18,10 +18,7 @@ export async function SiteHeader() {
           {viewer ? (
             <Link href={homeFor(viewer)} className="btn-primary btn-sm whitespace-nowrap">Open VoluForge</Link>
           ) : (
-            <>
-              <Link href="/login" className="btn btn-sm whitespace-nowrap px-2.5 text-ink hover:bg-soft sm:px-3.5">Sign in</Link>
-              <Link href="/signup" className="btn-primary btn-sm whitespace-nowrap"><span className="sm:hidden">Join</span><span className="hidden sm:inline">Create account</span></Link>
-            </>
+            <Link href="/login" className="btn btn-sm whitespace-nowrap px-2.5 text-ink hover:bg-soft sm:px-3.5">Sign in with email</Link>
           )}
         </div>
       </div>
